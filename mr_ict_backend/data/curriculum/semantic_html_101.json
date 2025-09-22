@@ -1,0 +1,52 @@
+{
+  "lesson_id": "semantic_html_101",
+  "title": "Semantic HTML",
+  "description": "Learn to write meaningful and accessible HTML using semantic tags to improve accessibility and SEO.",
+  "estimated_duration": 300,
+  "steps": [
+    {
+      "step_number": 1,
+      "description": "Introduce semantic HTML and its benefits for accessibility and SEO.",
+      "expected_code": "",
+      "notes": "Semantic HTML tags describe the purpose of content, unlike generic <div> and <span>. They improve accessibility for screen readers and SEO for search engines.",
+      "estimated_duration": 60
+    },
+    {
+      "step_number": 2,
+      "description": "Add a <header> tag with a heading and navigation.",
+      "expected_code": "<header>\n  <h1>Welcome to My Awesome Website</h1>\n  <nav>\n    <ul>\n      <li><a href=\"#\">Home</a></li>\n      <li><a href=\"#\">About</a></li>\n      <li><a href=\"#\">Services</a></li>\n      <li><a href=\"#\">Contact</a></li>\n    </ul>\n  </nav>\n</header>",
+      "notes": "The <header> tag typically contains introductory content like logos, navigation, or titles. <nav> defines navigation links.",
+      "estimated_duration": 60
+    },
+    {
+      "step_number": 3,
+      "description": "Add a <main> tag with two <article> elements.",
+      "expected_code": "<main>\n  <article>\n    <h2>First Main Article</h2>\n    <p>This is the main content of our first article...</p>\n  </article>\n  <article>\n    <h2>Second Article</h2>\n    <p>Here's some more important information in our second article...</p>\n  </article>\n</main>",
+      "notes": "<main> holds the primary content. <article> represents independent, reusable content like blog posts.",
+      "estimated_duration": 60
+    },
+    {
+      "step_number": 4,
+      "description": "Add an <aside> tag for related content.",
+      "expected_code": "<aside>\n  <h3>Related Content</h3>\n  <ul>\n    <li><a href=\"#\">Link to related article</a></li>\n    <li><a href=\"#\">Another interesting link</a></li>\n  </ul>\n</aside>",
+      "notes": "<aside> is for content related to but not central to the main content, like sidebars or pull quotes.",
+      "estimated_duration": 45
+    },
+    {
+      "step_number": 5,
+      "description": "Add a <footer> tag with copyright and links.",
+      "expected_code": "<footer>\n  <p>© 2025 My Awesome Website</p>\n  <p><a href=\"#\">Privacy Policy</a> | <a href=\"#\">Terms of Service</a></p>\n</footer>",
+      "notes": "<footer> contains end-of-page information like copyright or contact details.",
+      "estimated_duration": 45
+    },
+    {
+      "step_number": 6,
+      "description": "Assignment: Add a third <article> element inside <main>.",
+      "expected_code": "<article>\n  <h2>Another Blog Post</h2>\n  <p>This is some more content for our third blog post. It could contain interesting details or updates.</p>\n</article>",
+      "notes": "The assignment tests understanding of <article> as independent content. Users should add it inside <main>.",
+      "estimated_duration": 30,
+      "assignment": true
+    }
+  ],
+  "general_notes": "Semantic HTML improves accessibility (e.g., for screen readers) and SEO by clearly defining content roles. Use semantic tags to structure layouts logically."
+}

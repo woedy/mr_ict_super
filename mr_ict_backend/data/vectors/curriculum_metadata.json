@@ -1,0 +1,51 @@
+[
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 1,
+    "description": "Introduce semantic HTML and its benefits for accessibility and SEO.",
+    "estimated_duration": 60,
+    "assignment": false
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 2,
+    "description": "Add a <header> tag with a heading and navigation.",
+    "estimated_duration": 60,
+    "assignment": false
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 3,
+    "description": "Add a <main> tag with two <article> elements.",
+    "estimated_duration": 60,
+    "assignment": false
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 4,
+    "description": "Add an <aside> tag for related content.",
+    "estimated_duration": 45,
+    "assignment": false
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 5,
+    "description": "Add a <footer> tag with copyright and links.",
+    "estimated_duration": 45,
+    "assignment": false
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": 6,
+    "description": "Assignment: Add a third <article> element inside <main>.",
+    "estimated_duration": 30,
+    "assignment": true
+  },
+  {
+    "lesson_id": "semantic_html_101",
+    "step_number": null,
+    "description": "General Notes",
+    "estimated_duration": 0,
+    "assignment": false
+  }
+]
