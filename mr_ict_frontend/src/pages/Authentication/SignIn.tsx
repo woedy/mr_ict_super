@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { baseUrl } from '../../constants';
 import api from '../../services/apiClient';
+import { setTokens } from '../../services/tokenStorage';
 import backCover from '../../images/cover/ges.jpg';
 import Logo from '../../images/logo/mrict_logo.jpg';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -54,7 +54,8 @@ const SignIn = () => {
 
     if (!isValid) return;
 
-    const url = baseUrl + 'accounts/login-student/';
+    const loginPath =
+      (import.meta as any).env?.VITE_AUTH_LOGIN_ENDPOINT || 'accounts/login-student/';
     const data = {
       email,
       password,
@@ -64,7 +65,7 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const response = await api.post(url.replace(baseUrl, ''), data);
+      const response = await api.post(loginPath, data);
       const responseData = response.data;
 
       if (response.status === 200) {
@@ -75,12 +76,19 @@ const SignIn = () => {
           localStorage.setItem('admin_id', responseData.data.admin_id);
         }
         localStorage.setItem('email', responseData.data.email);
-        localStorage.setItem('photo', responseData.data.photo);
-        localStorage.setItem('token', responseData.data.token);
+        if (responseData.data.photo) {
+          localStorage.setItem('photo', responseData.data.photo);
+        } else {
+          localStorage.removeItem('photo');
+        }
+        setTokens(responseData.data.access || responseData.data.token, responseData.data.refresh);
         localStorage.setItem('epz', responseData.data.epz);
 
-        navigate('/dashboard');
-        window.location.reload();
+        if (responseData.data.requires_onboarding) {
+          navigate('/onboarding');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
       const responseData = error?.response?.data;

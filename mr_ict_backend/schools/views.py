@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Q
 
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -20,7 +20,7 @@ from schools.serializers import AllSchoolsSerializer, SchoolDetailsSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def add_school_view(request):
     payload = {}
     data = {}
@@ -157,7 +157,7 @@ def get_school_details_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def edit_school(request):
     payload = {}
     data = {}
@@ -213,7 +213,7 @@ def edit_school(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def archive_school(request):
     payload = {}
     data = {}
@@ -252,7 +252,7 @@ def archive_school(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def unarchive_school(request):
     payload = {}
     data = {}
@@ -289,7 +289,7 @@ def unarchive_school(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_all_archived_schools_view(request):
     payload = {}
     data = {}
@@ -338,7 +338,7 @@ def get_all_archived_schools_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def delete_school(request):
     payload = {}
     data = {}

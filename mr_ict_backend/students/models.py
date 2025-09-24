@@ -1,6 +1,9 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save, pre_save
+from django.utils import timezone
 
 from core.utils import unique_student_id_generator
 from courses.models import ChallengeBadge, LessonCodeSnippet, CodingChallenge, Course, Lesson
@@ -19,6 +22,12 @@ class Student(models.Model):
     progress = models.IntegerField(default=0)
     challenges_solved = models.IntegerField(default=0)
     days_active = models.IntegerField(default=0)
+    preferred_language = models.CharField(max_length=32, blank=True)
+    accessibility_preferences = models.JSONField(default=list, blank=True)
+    interest_tags = models.JSONField(default=list, blank=True)
+    allow_offline_downloads = models.BooleanField(default=True)
+    has_completed_onboarding = models.BooleanField(default=False)
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
@@ -35,7 +44,30 @@ def pre_save_student_id_receiver(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_student_id_receiver, sender=Student)
 
 
+class StudentXPEvent(models.Model):
+    SOURCE_ASSESSMENT = "assessment"
+    SOURCE_CHALLENGE = "challenge"
+    SOURCE_MANUAL = "manual"
 
+    SOURCE_CHOICES = (
+        (SOURCE_ASSESSMENT, "Assessment"),
+        (SOURCE_CHALLENGE, "Challenge"),
+        (SOURCE_MANUAL, "Manual"),
+    )
+
+    student = models.ForeignKey(Student, related_name='xp_events', on_delete=models.CASCADE)
+    source = models.CharField(max_length=32, choices=SOURCE_CHOICES)
+    reference = models.CharField(max_length=255, blank=True)
+    amount = models.IntegerField()
+    balance_after = models.IntegerField()
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student.user.get_full_name()} - {self.amount} XP"
 
 
 LEVEL = (
@@ -57,6 +89,41 @@ class StudentLevel(models.Model):
 
 
 
+
+class StudentCodingChallengeState(models.Model):
+    student = models.ForeignKey(Student, related_name='coding_states', on_delete=models.CASCADE)
+    challenge = models.ForeignKey(CodingChallenge, related_name='student_states', on_delete=models.CASCADE)
+    files = models.JSONField(default=list, blank=True)
+    hints_revealed = models.PositiveIntegerField(default=0)
+    last_hint_requested_at = models.DateTimeField(null=True, blank=True)
+    last_run_result = models.JSONField(default=dict, blank=True)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    is_completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'challenge')
+
+
+class StudentProject(models.Model):
+    project_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    student = models.ForeignKey(Student, related_name='projects', on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    files = models.JSONField(default=list, blank=True)
+    validation_schema = models.JSONField(default=dict, blank=True)
+    last_validation_result = models.JSONField(default=dict, blank=True)
+    last_validated_at = models.DateTimeField(null=True, blank=True)
+    is_published = models.BooleanField(default=False)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-updated_at']
 
 
 
@@ -91,7 +158,15 @@ class StudentLesson(models.Model):
     lesson = models.ForeignKey(Lesson, related_name='lesson', on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
 
-    resume_code = models.ForeignKey(LessonCodeSnippet, related_name='resume_code', on_delete=models.CASCADE, null=True, blank=True)
+    resume_code = models.ForeignKey(
+        LessonCodeSnippet,
+        related_name='resume_code',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    last_position_seconds = models.FloatField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
@@ -225,6 +300,36 @@ class StudentBadge(models.Model):
 
 
 
+class StudentCertificate(models.Model):
+    student = models.ForeignKey(Student, related_name='certificates', on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, related_name='student_certificates', on_delete=models.CASCADE, null=True, blank=True)
+    assessment = models.ForeignKey(
+        'assessments.Assessment',
+        related_name='student_certificates',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    issued_by = models.CharField(max_length=255, blank=True)
+    download_url = models.URLField(blank=True)
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    is_archived = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-issued_at']
+        unique_together = ("student", "assessment", "course", "title")
+
+    def __str__(self):
+        return f"{self.student.user.get_full_name()} - {self.title}"
+
+
 class StudentActivity(models.Model):
     student = models.ForeignKey(Student, related_name='student_activities', on_delete=models.CASCADE)
     action = models.CharField(max_length=1000, null=True, blank=True)
@@ -239,6 +344,31 @@ class StudentActivity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+
+
+class LessonComment(models.Model):
+    lesson = models.ForeignKey(Lesson, related_name='lesson_comments', on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, related_name='lesson_comments', on_delete=models.CASCADE)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
+    body = models.TextField()
+    likes = models.ManyToManyField(User, related_name='liked_lesson_comments', blank=True)
+    is_pinned = models.BooleanField(default=False)
+
+    is_archived = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+
+    def __str__(self):
+        return f"Comment by {self.student.user.get_full_name()} on {self.lesson.title}"
+
+    @property
+    def like_count(self):
+        return self.likes.count()
 
 
 class StudentMessage(models.Model):

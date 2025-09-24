@@ -12,6 +12,7 @@ import Lessons from './pages/Courses/Lessons.tsx';
 import AllCourses from './pages/Courses/AllCourses.tsx';
 import CourseChallenges from './pages/Courses/CourseChallenges.tsx';
 import Challenges from './pages/Courses/Challenges.tsx';
+import CourseDetail from './pages/Courses/CourseDetail.tsx';
 import AllStudents from './pages/Students/ListAllStudents.tsx';
 import StudentDetails from './pages/Students/StudentDetails.tsx';
 import ForgotPassword from './pages/Authentication/Password/ForgotPassword.tsx';
@@ -138,6 +139,16 @@ function App() {
             <>
               <PageTitle title="All Course - <Mr ICT - Admin />" />
               <AllCourses />
+            </>
+          }
+        />
+
+        <Route
+          path="/courses/:courseId"
+          element={
+            <>
+              <PageTitle title="Course detail - <Mr ICT - Admin />" />
+              <CourseDetail />
             </>
           }
         />

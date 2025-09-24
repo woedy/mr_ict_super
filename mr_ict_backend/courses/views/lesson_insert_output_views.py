@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -19,7 +19,7 @@ from courses.views.serializers import AllLessonInsertOutputsSerializer, LessonIn
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def add_lesson_insert_output_view(request):
     payload = {}
     data = {}
@@ -76,7 +76,7 @@ def add_lesson_insert_output_view(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def get_all_lesson_insert_outputs_view(request):
     payload = {}
     data = {}
@@ -128,7 +128,7 @@ def get_all_lesson_insert_outputs_view(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_lesson_insert_output_details_view(request):
     payload = {}
     data = {}
@@ -165,7 +165,7 @@ def get_lesson_insert_output_details_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def edit_lesson_output(request):
     payload = {}
     data = {}
@@ -219,7 +219,7 @@ def edit_lesson_output(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def archive_lesson_insert_output(request):
     payload = {}
     data = {}
@@ -258,7 +258,7 @@ def archive_lesson_insert_output(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def unarchive_lesson_insert_output(request):
     payload = {}
     data = {}
@@ -295,7 +295,7 @@ def unarchive_lesson_insert_output(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_all_archived_lesson_insert_output_view(request):
     payload = {}
     data = {}
@@ -344,7 +344,7 @@ def get_all_archived_lesson_insert_output_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def delete_lesson_insert_output(request):
     payload = {}
     data = {}

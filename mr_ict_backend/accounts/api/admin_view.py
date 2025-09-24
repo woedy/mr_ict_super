@@ -1,23 +1,14 @@
-from django.core.mail import send_mail
-
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
+from django.core.mail import send_mail
 from django.template.loader import get_template
 from rest_framework import status
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.response import Response
-
-from accounts.api.serializers import UserRegistrationSerializer
-from activities.models import AllActivity
-from django.core.mail import send_mail
-from django.contrib.auth import get_user_model, authenticate
-
+from rest_framework.decorators import authentication_classes, api_view, permission_classes
 from rest_framework.permissions import AllowAny
-
-
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.api.auth_utils import issue_tokens_for_user
 from accounts.api.serializers import UserRegistrationSerializer
 from activities.models import AllActivity
 from core.utils import generate_email_token, is_valid_email, is_valid_password
@@ -102,8 +93,8 @@ def register_admin_view(request):
             data['phone'] = user.phone
             data['photo'] = user.photo.url
 
-        token = Token.objects.get(user=user).key
-        data['token'] = token
+        tokens = issue_tokens_for_user(user)
+        data.update(tokens)
 
         email_token = generate_email_token()
 
@@ -228,11 +219,6 @@ class AdminLogin(APIView):
             return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
 
-        try:
-            token = Token.objects.get(user=user)
-        except Token.DoesNotExist:
-            token = Token.objects.create(user=user)
-
         user.fcm_token = fcm_token
         user.save()
 
@@ -245,7 +231,7 @@ class AdminLogin(APIView):
         data["photo"] = user.photo.url
         data["country"] = user.country
         data["phone"] = user.phone
-        data["token"] = token.key
+        data.update(issue_tokens_for_user(user))
 
         payload['message'] = "Successful"
         payload['data'] = data
@@ -316,11 +302,6 @@ def verify_email(request):
 
 
 
-    try:
-        token = Token.objects.get(user=user)
-    except Token.DoesNotExist:
-        token = Token.objects.create(user=user)
-
     user.is_active = True
     user.email_verified = True
     user.save()
@@ -330,7 +311,7 @@ def verify_email(request):
     data["first_name"] = user.first_name
     data["last_name"] = user.last_name
     data["photo"] = user.photo.url
-    data["token"] = token.key
+    data.update(issue_tokens_for_user(user))
 
     payload['message'] = "Successful"
     payload['data'] = data

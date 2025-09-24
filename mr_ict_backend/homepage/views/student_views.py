@@ -1,15 +1,11 @@
-
 from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from courses.models import CodingChallenge, Course
-from homepage.serializers import DashboardCodingChallengeSerializer, DashboardCourseSerializer, DashboardStudentBadgeSerializer, DashboardStudentCourseLessonSerializer
 from students.models import StudentBadge, StudentChallenge, StudentCourse, StudentLesson
 
 
@@ -17,150 +13,134 @@ from students.models import StudentBadge, StudentChallenge, StudentCourse, Stude
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_student_homepage_data_view(request):
+    def absolute_media_url(image_field):
+        if not image_field:
+            return None
+        try:
+            url = image_field.url
+        except (AttributeError, ValueError):
+            return None
+        return request.build_absolute_uri(url) if request is not None else url
+
+    def serialize_resume_item(item):
+        lesson = getattr(item, "lesson", None)
+        student_course = getattr(item, "course", None)
+        course = getattr(student_course, "course", None)
+
+        return {
+            "student_lesson_id": item.pk,
+            "lesson_id": getattr(lesson, "lesson_id", None),
+            "lesson_title": getattr(lesson, "title", ""),
+            "course_id": getattr(course, "course_id", None),
+            "course_title": getattr(course, "title", ""),
+            "lessons_completed": getattr(student_course, "lessons_completed", 0),
+            "total_lessons": getattr(student_course, "total_lessons", 0),
+            "progress_percent": float(student_course.progress_percent) if getattr(student_course, "progress_percent", None) is not None else None,
+            "thumbnail": absolute_media_url(getattr(lesson, "thumbnail", None)) if lesson else None,
+            "updated_at": item.updated_at,
+        }
+
+    def serialize_course(course):
+        return {
+            "course_id": course.course_id,
+            "title": course.title,
+            "summary": course.summary,
+            "description": course.description,
+            "level": course.level,
+            "estimated_duration_minutes": course.estimated_duration_minutes,
+            "image": absolute_media_url(course.image),
+            "slug": course.slug,
+        }
+
+    def serialize_badge(badge):
+        challenge = getattr(badge, "coding_challenge", None)
+        challenge_title = getattr(challenge, "title", None)
+        return {
+            "id": badge.pk,
+            "name": getattr(badge.badge, "badge_name", ""),
+            "criteria": getattr(badge.badge, "criteria", ""),
+            "image": absolute_media_url(getattr(badge.badge, "image", None)),
+            "challenge_title": challenge_title,
+            "earned_at": badge.earned_at,
+        }
+
+    def serialize_challenge(challenge):
+        return {
+            "id": challenge.pk,
+            "title": challenge.title,
+            "difficulty": challenge.difficulty,
+            "course_title": getattr(challenge.course, "title", ""),
+        }
+
     payload = {}
     data = {}
     errors = {}
 
-    user_data = {}
-    notification_count = 0
-    messages_count = 0
-    challenge_badges = []
+    user_id = request.query_params.get('user_id')
 
-    course_overview_data = {}
+    if not user_id:
+        errors['user_id'] = ["User ID is required."]
 
-    resume_learning = []
+    user = None
+    if not errors:
+        try:
+            user = get_user_model().objects.get(user_id=user_id)
+        except get_user_model().DoesNotExist:
+            errors['user_id'] = ['User does not exist.']
 
-    available_html_challenges = []
-    available_css_challenges = []
-    available_javascript_challenges = []
-    available_python_challenges = []
-
-
-
-    user_id = request.query_params.get('user_id', None)
-    
-    if user_id is None:
-        errors['user_id'] = "User ID is required"
-
-    try:
-        user = get_user_model().objects.get(user_id=user_id)
-    except:
-        errors['user_id'] = ['User does not exist.']    
-        
     if errors:
         payload['message'] = "Errors"
         payload['errors'] = errors
         return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-    
 
-    #User Data
-    user_data['user_id'] = user.user_id
-    user_data['first_name'] = user.first_name
-    user_data['last_name'] = user.last_name
-    user_data['photo'] = user.photo.url
+    user_data = {
+        "user_id": user.user_id,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "photo": absolute_media_url(getattr(user, "photo", None)),
+    }
 
-    notifications = user.notifications.all().filter(read=False)
-    notification_count = notifications.count()
+    notifications = user.notifications.filter(read=False)
+    messages = user.student_messages.filter(read=False)
 
-    
-    messages = user.student_messages.all().filter(read=False)
-    messages_count = messages.count()
+    badges = StudentBadge.objects.filter(student__user=user).select_related('badge', 'coding_challenge')
+    resume_queryset = (
+        StudentLesson.objects.filter(course__student__user=user, completed=False)
+        .select_related('lesson', 'course__course')
+        .order_by('-updated_at')[:5]
+    )
+    all_courses = Course.objects.filter(is_archived=False)
 
+    def challenges_for_course_title(title):
+        return CodingChallenge.objects.filter(
+            is_archived=False,
+            course__title__iexact=title,
+        ).select_related('course')[:5]
 
-    badges = StudentBadge.objects.all().filter(student__user=user)
-    badges_serializer = DashboardStudentBadgeSerializer(badges, many=True)
-    if badges_serializer:
-        badges_serializer = badges_serializer.data
+    data['user_data'] = user_data
+    data['notification_count'] = notifications.count()
+    data['messages_count'] = messages.count()
+    data['challenge_badges'] = [serialize_badge(b) for b in badges]
 
-    challenge_badges = badges_serializer
-
-
-
-    ### Course Overview ###
     in_progress = StudentCourse.objects.filter(student__user=user, completed=False)
     completed_count = StudentCourse.objects.filter(student__user=user, completed=True)
     challenges_count = StudentChallenge.objects.filter(student__user=user, completed=True)
 
-    course_overview_data['in_progress_count'] = in_progress.count()
-    course_overview_data['completed_count'] = completed_count.count()
-    course_overview_data['challenges_count'] = challenges_count.count()
+    data['course_overview'] = {
+        "in_progress": in_progress.count(),
+        "completed": completed_count.count(),
+        "challenges_completed": challenges_count.count(),
+    }
 
+    data['resume_learning'] = [serialize_resume_item(item) for item in resume_queryset]
+    data['available_courses'] = [serialize_course(course) for course in all_courses]
 
-
-    ### Resume Learning ###
-    resume = StudentLesson.objects.filter(course__student__user=user, completed=False)
-    resume_serializer = DashboardStudentCourseLessonSerializer(resume, many=True)
-    if resume_serializer:
-        resume_serializer = resume_serializer.data
-
-    resume_learning = resume_serializer
-
-    ### All Couses ###
-
-    all_courses = Course.objects.filter(is_archived=False)
-    all_courses_serializer = DashboardCourseSerializer(all_courses, many=True)
-    if all_courses_serializer:
-        all_courses_serializer = all_courses_serializer.data
-    
-    available_coures = all_courses_serializer
-
-    
-
-    ### All Challenges ###
-
-    #HTML
-    html_challenges = CodingChallenge.objects.filter(is_archived=False, course__title='HTML')[:5]
-    html_challenges_serializer = DashboardCodingChallengeSerializer(html_challenges, many=True)
-    if html_challenges_serializer:
-        html_challenges_serializer = html_challenges_serializer.data
-
-    available_html_challenges = html_challenges_serializer
-
-    #CSS
-    css_challenges = CodingChallenge.objects.filter(is_archived=False, course__title='CSS')[:5]
-    css_challenges_serializer = DashboardCodingChallengeSerializer(css_challenges, many=True)
-    if css_challenges_serializer:
-        css_challenges_serializer = css_challenges_serializer.data
-
-    available_css_challenges = css_challenges_serializer
-
-    #Javascript
-    javascript_challenges = CodingChallenge.objects.filter(is_archived=False, course__title='Javascript')[:5]
-    javascript_challenges_serializer = DashboardCodingChallengeSerializer(javascript_challenges, many=True)
-    if javascript_challenges_serializer:
-        javascript_challenges_serializer = javascript_challenges_serializer.data
-
-    available_javascript_challenges = javascript_challenges_serializer
-
-    #Python
-    python_challenges = CodingChallenge.objects.filter(is_archived=False, course__title='Python')[:5]
-    python_challenges_serializer = DashboardCodingChallengeSerializer(python_challenges, many=True)
-    if python_challenges_serializer:
-        python_challenges_serializer = python_challenges_serializer.data
-        
-    available_python_challenges = python_challenges_serializer
-
-
-
-
-
-    ##### Final data ###################
-
-    data['user_data'] = user_data
-    data['notification_count'] = notification_count
-    data['messages_count'] = messages_count
-    data['challenge_badges'] = challenge_badges
-
-    data['resume_learning'] = resume_learning
-    data['available_coures'] = available_coures
-
-    data['available_html_challenges'] = available_html_challenges
-    data['available_css_challenges'] = available_css_challenges
-    data['available_javascript_challenges'] = available_javascript_challenges
-    data['available_python_challenges'] = available_python_challenges
-
+    data['available_html_challenges'] = [serialize_challenge(ch) for ch in challenges_for_course_title('HTML')]
+    data['available_css_challenges'] = [serialize_challenge(ch) for ch in challenges_for_course_title('CSS')]
+    data['available_javascript_challenges'] = [serialize_challenge(ch) for ch in challenges_for_course_title('Javascript')]
+    data['available_python_challenges'] = [serialize_challenge(ch) for ch in challenges_for_course_title('Python')]
 
     payload['message'] = "Successful"
     payload['data'] = data

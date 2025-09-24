@@ -16,13 +16,20 @@ import AllCourses from './pages/Courses/AllCourses.tsx';
 import RecordedCourseLessons from './pages/RecordedVideos/RecordedCourseLessons.tsx';
 import RecordLessonPage from './pages/RecordLesson/RecordLessonPage.tsx';
 import RecordVideoPlayer from './pages/RecordedVideos/VideoPlayer/RecordVideoPlayer.tsx';
-import CodeEditorWithExternalFiles from './pages/Projects/ExternalCode.tsx';
+import CodingSandbox from './pages/Playground/CodingSandbox.tsx';
+import ProjectWorkspace from './pages/Projects/Workspace.tsx';
 import EditorLayout from './pages/GPTEditor/EditorLayout.tsx';
 import CourseChallenges from './pages/Courses/CourseChallenges.tsx';
 import Challenges from './pages/Courses/Challenges.tsx';
 import AllMyCourses from './pages/MyCourses/AllMyCourses.tsx';
 import VerifyEmail from './pages/Authentication/VerifyEmail.tsx';
+import Onboarding from './pages/Onboarding/Onboarding.tsx';
 import LmmTutor from './pages/LLMtutor/LmmTutor.tsx';
+import AssessmentsList from './pages/Assessments/AssessmentsList.tsx';
+import TakeAssessment from './pages/Assessments/TakeAssessment.tsx';
+import ProgressOverview from './pages/Progress/ProgressOverview.tsx';
+import Announcements from './pages/Community/Announcements.tsx';
+import LessonDiscussion from './pages/Community/LessonDiscussion.tsx';
 
 const hiddenOnRoutes = [
   '/',
@@ -31,12 +38,14 @@ const hiddenOnRoutes = [
   '/verify-email',
   '/forgot-password',
   '/reset-password',
+  '/onboarding',
 
   '/record-lesson-page',
   '/recorded-course-lessons',
   '/record-player',
 
-  '/external-editor',
+  '/sandbox',
+  '/projects/workspace',
 
   '/llm-tutor',
 
@@ -99,6 +108,56 @@ function App() {
             <>
               <PageTitle title="Course Challenges - <Mr ICT />" />
               <CourseChallenges />
+            </>
+          }
+        />
+
+        <Route
+          path="/assessments"
+          element={
+            <>
+              <PageTitle title="Assessments - <Mr ICT />" />
+              <AssessmentsList />
+            </>
+          }
+        />
+
+        <Route
+          path="/assessments/:slug"
+          element={
+            <>
+              <PageTitle title="Take Assessment - <Mr ICT />" />
+              <TakeAssessment />
+            </>
+          }
+        />
+
+        <Route
+          path="/progress"
+          element={
+            <>
+              <PageTitle title="Progress & Rewards - <Mr ICT />" />
+              <ProgressOverview />
+            </>
+          }
+        />
+
+        <Route
+          path="/community/announcements"
+          element={
+            <>
+              <PageTitle title="Community Announcements - <Mr ICT />" />
+              <Announcements />
+            </>
+          }
+        />
+
+        <Route
+          path="/community/lessons/:lessonId"
+          element={
+            <>
+              <PageTitle title="Lesson Discussion - <Mr ICT />" />
+              <LessonDiscussion />
             </>
           }
         />
@@ -188,6 +247,16 @@ function App() {
         />
 
         <Route
+          path="/onboarding"
+          element={
+            <>
+              <PageTitle title="Tell us about you | <Mr ICT />" />
+              <Onboarding />
+            </>
+          }
+        />
+
+        <Route
           path="/recorded-course-lessons"
           element={
             <>
@@ -227,11 +296,21 @@ function App() {
         />
 
         <Route
-          path="/external-editor"
+          path="/sandbox"
           element={
             <>
-              <PageTitle title="External Editor | <Mr ICT />" />
-              <CodeEditorWithExternalFiles />
+              <PageTitle title="Coding Sandbox | <Mr ICT />" />
+              <CodingSandbox />
+            </>
+          }
+        />
+
+        <Route
+          path="/projects/workspace"
+          element={
+            <>
+              <PageTitle title="Project Workspace | <Mr ICT />" />
+              <ProjectWorkspace />
             </>
           }
         />

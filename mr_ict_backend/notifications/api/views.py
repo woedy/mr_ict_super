@@ -1,142 +1,62 @@
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from __future__ import annotations
+
 from django.db.models import Q
-from rest_framework import status
-from rest_framework.decorators import permission_classes, api_view, authentication_classes
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from accounts.api.custom_jwt import CustomJWTAuthentication
-from notifications.api.serializers import AllNotificationsSerializer
-from notifications.models import Notification
-
-
-@api_view(['POST', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([CustomJWTAuthentication, ])
-def set_notification_to_read(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    if request.method == 'POST':
-        notification_id = request.data.get('notification_id', "")
+from notifications.api.serializers import AnnouncementSerializer, NotificationSerializer
+from notifications.models import Announcement, Notification
+from students.api.views import StudentExperienceBaseView
 
 
+class StudentNotificationListView(StudentExperienceBaseView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        student = self.get_student(request)
+        notifications = Notification.objects.filter(user=request.user).order_by("-created_at")[:50]
+        serializer = NotificationSerializer(notifications, many=True)
+        unread_count = notifications.filter(read=False).count()
+        return Response(
+            {
+                "message": "Successful",
+                "data": {
+                    "notifications": serializer.data,
+                    "unread": unread_count,
+                },
+            }
+        )
+
+    def post(self, request):
+        notification_id = request.data.get("notification_id")
         if not notification_id:
-            errors['notification_id'] = ['Notification ID is required.']
-
-
-
+            return Response({"message": "Notification ID required"}, status=400)
         try:
-            notification = Notification.objects.get(id=notification_id)
-        except:
-            errors['notification_id'] = ['Notification does not exist.']
-
-
-        if errors:
-            payload['message'] = "Errors"
-            payload['errors'] = errors
-            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-
-
+            notification = Notification.objects.get(id=notification_id, user=request.user)
+        except Notification.DoesNotExist:
+            return Response({"message": "Notification not found"}, status=404)
         notification.read = True
-        notification.save()
-
-        payload['message'] = "Successful"
-        payload['data'] = data
-
-    return Response(payload)
+        notification.save(update_fields=["read", "updated_at"])
+        return Response({"message": "Notification marked as read"})
 
 
+class StudentAnnouncementListView(StudentExperienceBaseView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        student = self.get_student(request)
+        course_id = request.query_params.get("course")
+        now = timezone.now()
+        queryset = Announcement.objects.filter(active=True, is_archived=False)
+        if course_id:
+            queryset = queryset.filter(audience=Announcement.AUDIENCE_COURSE, course__course_id=course_id)
+        queryset = queryset.filter(Q(expires_at__gt=now) | Q(expires_at__isnull=True))
+        queryset = queryset.order_by("-is_pinned", "-published_at")
 
-
-
-
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([CustomJWTAuthentication, ])
-def get_all_notifications(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    search_query = request.query_params.get('search', '')
-    filter_department = request.query_params.get('filter_department', '')
-    page_number = request.query_params.get('page', 1)
-    page_size = 10
-
-    all_notification = Notification.objects.all().order_by('-created_at')
-
-
-    if search_query:
-        all_notification = all_notification.filter(
-            Q(department__icontains=search_query)
-        )
-
-    if filter_department:
-        all_notification = all_notification.filter(
-            department__icontains=filter_department
-        )
-
-
-    paginator = Paginator(all_notification, page_size)
-
-    try:
-        paginated_notification = paginator.page(page_number)
-    except PageNotAnInteger:
-        paginated_notification = paginator.page(1)
-    except EmptyPage:
-        paginated_notification = paginator.page(paginator.num_pages)
-
-    all_notifications_serializer = AllNotificationsSerializer(paginated_notification, many=True)
-
-
-    data['notifications'] = all_notifications_serializer.data
-    data['pagination'] = {
-        'page_number': paginated_notification.number,
-        'total_pages': paginator.num_pages,
-        'next': paginated_notification.next_page_number() if paginated_notification.has_next() else None,
-        'previous': paginated_notification.previous_page_number() if paginated_notification.has_previous() else None,
-    }
-
-    payload['message'] = "Successful"
-    payload['data'] = data
-
-    return Response(payload, status=status.HTTP_200_OK)
-
-
-
-@api_view(['POST', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([CustomJWTAuthentication, ])
-def delete_notification(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    if request.method == 'POST':
-        notification_id = request.data.get('notification_id', "")
-
-        if not notification_id:
-            errors['notification_id'] = ['Notification ID is required.']
-
-        try:
-            notification = Notification.objects.get(id=notification_id)
-        except:
-            errors['notification_id'] = ['Notification does not exist.']
-
-        if errors:
-            payload['message'] = "Errors"
-            payload['errors'] = errors
-            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-
-        notification.delete()
-
-
-        payload['message'] = "Successful"
-        payload['data'] = data
-
-    return Response(payload)
-
-
+        serializer = AnnouncementSerializer(queryset, many=True)
+        return Response({"message": "Successful", "data": serializer.data})

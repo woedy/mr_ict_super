@@ -1,56 +1,136 @@
-from django.db import models
+from __future__ import annotations
 
-from courses.models import Lesson
+from django.db import models
+from django.template.defaultfilters import slugify
+from django.utils import timezone
+
+from courses.models import ChallengeBadge, Lesson
 from students.models import Student
 
 
 class Assessment(models.Model):
-    lesson = models.ForeignKey(Lesson, related_name='assessments', on_delete=models.CASCADE)
+    """Quiz or practice assessment associated with a lesson."""
+
+    lesson = models.ForeignKey(Lesson, related_name="assessments", on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    passing_score = models.IntegerField()  # e.g., 70% passing grade
+    slug = models.SlugField(max_length=255, unique=True)
+    description = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)
+    passing_score = models.IntegerField(help_text="Percentage threshold required to pass")
+    time_limit_seconds = models.PositiveIntegerField(null=True, blank=True)
+    max_attempts = models.PositiveIntegerField(default=3)
+    is_practice = models.BooleanField(default=False)
+    reward_xp = models.PositiveIntegerField(default=50)
+    reward_badge = models.ForeignKey(
+        ChallengeBadge,
+        related_name="assessments",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    issues_certificate = models.BooleanField(default=False)
+    certificate_title = models.CharField(max_length=255, blank=True)
+    available_from = models.DateTimeField(null=True, blank=True)
+    available_until = models.DateTimeField(null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    class Meta:
+        ordering = ["title"]
+
+    def __str__(self) -> str:
         return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            suffix = 1
+            while Assessment.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                suffix += 1
+                slug = f"{base_slug}-{suffix}"
+            self.slug = slug
+        if self.available_from and self.available_until and self.available_from >= self.available_until:
+            raise ValueError("available_from must be before available_until")
+        super().save(*args, **kwargs)
+
+    def is_available(self) -> bool:
+        now = timezone.now()
+        if self.available_from and now < self.available_from:
+            return False
+        if self.available_until and now > self.available_until:
+            return False
+        return self.active and not self.is_archived
+
+    def total_points(self) -> int:
+        return sum(question.points for question in self.questions.all())
 
 
 
 
 class Question(models.Model):
-    assessment = models.ForeignKey(Assessment, related_name='questions', on_delete=models.CASCADE)
+    MULTIPLE_CHOICE = "multiple_choice"
+    TRUE_FALSE = "true_false"
+    FREE_RESPONSE = "free_response"
+
+    QUESTION_TYPES = (
+        (MULTIPLE_CHOICE, "Multiple Choice"),
+        (TRUE_FALSE, "True/False"),
+        (FREE_RESPONSE, "Free Response"),
+    )
+
+    assessment = models.ForeignKey(Assessment, related_name="questions", on_delete=models.CASCADE)
     question_text = models.TextField()
-    question_type = models.CharField(max_length=20, choices=[('multiple_choice', 'Multiple Choice'), ('true_false', 'True/False')])
-    options = models.JSONField(null=True, blank=True)  # Stores options for MCQs in JSON format
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
+    options = models.JSONField(null=True, blank=True)
     correct_answer = models.TextField()
+    explanation = models.TextField(blank=True)
+    points = models.PositiveIntegerField(default=1)
+    order = models.PositiveIntegerField(default=1)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["order", "id"]
+        unique_together = ("assessment", "order")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.question_text
 
 
 
 class StudentQuizAttempt(models.Model):
-    student = models.ForeignKey(Student, related_name='quiz_attempts', on_delete=models.CASCADE)
-    assessment = models.ForeignKey(Assessment, related_name='attempts', on_delete=models.CASCADE)
-    answers = models.JSONField()  # Store the answers the student provided (JSON object)
+    PASSED = "passed"
+    FAILED = "failed"
+
+    STATUS_CHOICES = ((PASSED, "Passed"), (FAILED, "Failed"))
+
+    student = models.ForeignKey(Student, related_name="quiz_attempts", on_delete=models.CASCADE)
+    assessment = models.ForeignKey(Assessment, related_name="attempts", on_delete=models.CASCADE)
+    answers = models.JSONField()
     score = models.IntegerField()
-    status = models.CharField(max_length=10, choices=[('passed', 'Passed'), ('failed', 'Failed')])
-    attempted_at = models.DateTimeField(auto_now_add=True)
+    percentage_score = models.DecimalField(max_digits=5, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    awarded_xp = models.PositiveIntegerField(default=0)
+    feedback = models.TextField(blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(auto_now=True)
+    duration_seconds = models.PositiveIntegerField(default=0)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-created_at"]
 
-    def __str__(self):
-        return f"Attempt by {self.student.user.first_name} on {self.assessment.title}"
+    def __str__(self) -> str:
+        student_name = getattr(self.student.user, "first_name", "Student")
+        return f"Attempt by {student_name} on {self.assessment.title}"

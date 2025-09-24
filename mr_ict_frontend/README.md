@@ -1,3 +1,16 @@
+# Mr ICT Learner App (TailAdmin React Base)
+
+This Vite/React project powers the student-facing experience for Mr ICT. It still ships with TailAdmin's reference documentation below, but the quick start for this codebase is:
+
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Environment variables (`.env`) define the Django API base URL plus the login/refresh endpoints used by the shared axios client. Tokens are stored in `localStorage` using the new `tokenStorage` helper so the backend's SimpleJWT access/refresh pair is always honoured.
+
+---
 # TailAdmin React - Free React Tailwind Admin Dashboard Template
 
 TailAdmin is a free and open-source admin dashboard template built on **React and Tailwind CSS**, providing developers with everything they need to create a comprehensive, data-driven back-end, 

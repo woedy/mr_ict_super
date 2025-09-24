@@ -1,86 +1,44 @@
+from __future__ import annotations
+
+from dataclasses import asdict
 
 from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from courses.models import CodingChallenge, Course
-from homepage.serializers import DashboardCodingChallengeSerializer, DashboardCourseSerializer, DashboardStudentBadgeSerializer, DashboardStudentCourseLessonSerializer
-from students.models import StudentBadge, StudentChallenge, StudentCourse, StudentLesson
-
+from analytics.services import build_admin_summary
 
 
-
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([JWTAuthentication])
 def get_admin_dashboard_data_view(request):
-    payload = {}
-    data = {}
-    errors = {}
+    payload: dict[str, object] = {}
+    data: dict[str, object] = {}
+    errors: dict[str, object] = {}
 
-    user_data = {}
-    stats_data = {}
-    total_students = 0
-    active_courses = 0
-    total_lessons = 0
-    total_callenges = 0
-    new_students_today = 0
-    courses_comleted_today = 0
-
-    recent_platform_activities = []
-
-    todays_hihlights = {}
-    top_performing_coures = []
-    student_reach = []
-
-    resume_learning = []
-
-    available_html_challenges = []
-    available_css_challenges = []
-    available_javascript_challenges = []
-    available_python_challenges = []
-
-
-
-    user_id = request.query_params.get('user_id', None)
-    
-    if user_id is None:
-        errors['user_id'] = "User ID is required"
-
-    try:
-        user = get_user_model().objects.get(user_id=user_id)
-    except:
-        errors['user_id'] = ['User does not exist.']    
-        
+    user_id = request.query_params.get("user_id")
+    if user_id:
+        try:
+            get_user_model().objects.get(user_id=user_id)
+        except get_user_model().DoesNotExist:
+            errors["user_id"] = ["User does not exist."]
     if errors:
-        payload['message'] = "Errors"
-        payload['errors'] = errors
+        payload["message"] = "Errors"
+        payload["errors"] = errors
         return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-    
 
-    #States Data
-    stats_data["totalStudents"] = total_students
-    stats_data["activeCourses"] = active_courses
-    stats_data["totalLessons"] = total_lessons
-    stats_data["totalChallenges"] = total_callenges
-    stats_data["newStudentsToday"] = new_students_today
-    stats_data["coursesCompletedToday"] = courses_comleted_today
+    summary = build_admin_summary()
+    summary_dict = asdict(summary)
+    data["stats"] = summary_dict.get("stats", {})
+    data["recentActivity"] = summary_dict.get("recent_activity", [])
+    data["timeseries"] = summary_dict.get("timeseries", [])
+    data["topCourses"] = summary_dict.get("top_courses", [])
+    data["announcements"] = summary_dict.get("announcements", [])
 
-
-    data["stats"] = stats_data
-
-
-
-
-    payload['message'] = "Successful"
-    payload['data'] = data
-
+    payload["message"] = "Successful"
+    payload["data"] = data
     return Response(payload, status=status.HTTP_200_OK)
-
-
-

@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from courses.models import Course, Lesson, LessonAssignment, LessonCodeSnippet, LessonIntroVideo, LessonVideo
 from courses.serializers import AllLessonsSerializer, LessonDetailsSerializer, LessonIntroVideoSerializer, LessonVideoSerializer
@@ -15,7 +15,7 @@ from students.models import LessonNote, LessonNoteSnippet
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def get_course_info_view(request):
     payload = {}
     data = {}
@@ -87,7 +87,7 @@ def get_course_info_view(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_interactive_coding_view(request):
     payload = {}
     data = {}
@@ -183,7 +183,7 @@ def get_interactive_coding_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def save_lesson_note(request):
     payload = {}
     data = {}

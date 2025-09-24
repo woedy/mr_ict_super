@@ -1,6 +1,20 @@
 # TailAdmin React - Free React Tailwind Admin Dashboard Template
 
-TailAdmin is a free and open-source admin dashboard template built on **React and Tailwind CSS**, providing developers with everything they need to create a comprehensive, data-driven back-end, 
+# Mr ICT Admin Console (TailAdmin React Base)
+
+This app powers authoring, moderation, and analytics workflows for administrators. TailAdmin's reference notes are preserved below, but the Mr ICT specific setup is:
+
+```bash
+cp .env.example .env
+npm install
+npm run dev -- --host
+```
+
+The `.env` file controls the Django API base URL plus auth endpoints shared with the learner app. JWT access/refresh tokens live in `localStorage` via `src/services/tokenStorage.ts`, and the axios client automatically refreshes expired access tokens.
+
+---
+
+ TailAdmin is a free and open-source admin dashboard template built on **React and Tailwind CSS**, providing developers with everything they need to create a comprehensive, data-driven back-end,
 dashboard, or admin panel solution for upcoming web projects.
 
 [![tailwind react admin template](https://ucarecdn.com/d2a6daed-eb9c-4c2f-8a95-4419c450e23a/tailadminreact.jpg)](https://react-demo.tailadmin.com/)

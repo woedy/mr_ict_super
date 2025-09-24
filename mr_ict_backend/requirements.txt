@@ -13,6 +13,7 @@ pyfcm
 django-cors-headers
 daphne
 djangorestframework-simplejwt
+django-environ
 gunicorn
 ffmpeg-python
 #sentence-transformers==2.2.2 

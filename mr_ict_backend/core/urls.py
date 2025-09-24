@@ -24,6 +24,7 @@ from django.urls import include, path
 from django.conf.urls.static import static
 
 from video_tutorials.views import get_all_recorded_turorial_view, get_video_tutorial_details_view, project_create, project_detail, project_file_by_project, project_file_list, project_list, record_video_view, save_code_snapshot, update_project_file
+from core.health import health_check_view
 
 
 urlpatterns = [
@@ -34,10 +35,11 @@ urlpatterns = [
     path('api/accounts/', include('accounts.api.urls', 'accounts_api')),
     path('api/schools/', include('schools.urls', 'schools_api')),
     path('api/courses/', include('courses.urls', 'courses_api')),
+    path('api/admin/content/', include('courses.api.urls', 'courses_admin_api')),
     path('api/students/', include('students.urls', 'students_api')),
-
-    path('api/llm-tutor/', include('llm_tutor.urls', 'llm_tutor_api')),
-
+    path('api/assessments/', include('assessments.api.urls', 'assessments_api')),
+    path('api/notifications/', include('notifications.api.urls', 'notifications_api')),
+    path('api/analytics/', include('analytics.api.urls', 'analytics_api')),
 
     #path("api/upload/", VideoUploadView.as_view(), name="video-upload"),
     path("api/upload/", record_video_view, name="video-upload"),
@@ -56,7 +58,15 @@ urlpatterns = [
     path('api/project_files/<int:file_id>/', update_project_file, name='update_project_file'),
 
 
+    path("health/", health_check_view, name="health-check"),
 ]
+
+
+try:
+    urlpatterns.append(path('api/llm-tutor/', include('llm_tutor.urls', 'llm_tutor_api')))
+except ModuleNotFoundError:
+    # LLM tutor dependencies are optional until Phase 4 resumes.
+    pass
 
 
 if settings.DEBUG:

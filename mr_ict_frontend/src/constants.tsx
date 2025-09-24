@@ -1,4 +1,6 @@
 // Centralized via Vite env with defaults
+import { getAccessToken, getRefreshToken } from './services/tokenStorage';
+
 export const baseUrl = (import.meta as any).env?.VITE_API_BASE
   ? (import.meta as any).env.VITE_API_BASE.replace(/\/?$/, '/')
   : 'http://localhost:8000/api/';
@@ -14,8 +16,8 @@ export const baseWsUrl = (import.meta as any).env?.VITE_WS_BASE || 'ws://localho
 //export const baseUrl = "http://localhost:5050/";
 //export const baseWsUrl = "ws://localhost:5050/";
 
-//export const userToken = localStorage.getItem('token');
-export const userToken = localStorage.getItem('token');
+export const userToken = getAccessToken();
+export const refreshToken = getRefreshToken();
 export const userID = localStorage.getItem('user_id');
 
 export const userEmail = localStorage.getItem('email');

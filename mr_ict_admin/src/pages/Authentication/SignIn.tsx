@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { baseUrl } from '../../constants';
+import api from '../../services/apiClient';
+import { setTokens } from '../../services/tokenStorage';
 import backCover from '../../images/cover/ges.jpg';
 import Logo from '../../images/logo/mrict_logo.jpg';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -53,7 +54,8 @@ const SignIn = () => {
 
     if (!isValid) return;
 
-    const url = baseUrl + 'api/accounts/login-admin/';
+    const loginPath =
+      (import.meta as any).env?.VITE_AUTH_LOGIN_ENDPOINT || 'accounts/login-admin/';
     const data = {
       email,
       password,
@@ -63,13 +65,8 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const responseData = await response.json();
+      const response = await api.post(loginPath, data);
+      const responseData = response.data;
 
       if (response.status === 200) {
         localStorage.setItem('first_name', responseData.data.first_name);
@@ -78,26 +75,23 @@ const SignIn = () => {
         localStorage.setItem('admin_id', responseData.data.admin_id);
         localStorage.setItem('email', responseData.data.email);
         localStorage.setItem('photo', responseData.data.photo);
-        localStorage.setItem('token', responseData.data.token);
+        setTokens(responseData.data.access || responseData.data.token, responseData.data.refresh);
         localStorage.setItem('epz', responseData.data.epz);
 
         navigate('/dashboard');
         window.location.reload();
-      } else if (response.status === 400) {
-        setEmailError(responseData.errors?.email?.[0] || '');
-        setPasswordError(responseData.errors?.password?.[0] || '');
-
-        if (
-          responseData.errors?.email?.[0] ===
-          'Please check your email to confirm your account or resend confirmation email.'
-        ) {
-          navigate('/verify-email', { state: { email } });
-        }
-      } else {
-        console.error('Login failed:', responseData.message);
       }
-    } catch (error) {
-      console.error('Error:', error.message);
+    } catch (error: any) {
+      const responseData = error?.response?.data;
+      setEmailError(responseData?.errors?.email?.[0] || '');
+      setPasswordError(responseData?.errors?.password?.[0] || '');
+
+      if (
+        responseData?.errors?.email?.[0] ===
+        'Please check your email to confirm your account or resend confirmation email.'
+      ) {
+        navigate('/verify-email', { state: { email } });
+      }
     } finally {
       setLoading(false);
     }

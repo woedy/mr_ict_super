@@ -1,278 +1,359 @@
-// src/pages/AllCoursesPage.jsx (or similar)
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FiAlertCircle, FiEdit2, FiExternalLink, FiFilter, FiLoader, FiPlus, FiRefreshCw } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
-import React, { useState } from 'react';
-import { FiSearch, FiStar, FiClock, FiCode, FiAward, FiBookOpen } from 'react-icons/fi'; // Feather icons for a clean look
+import {
+  createCourse,
+  listCourses,
+  publishCourse,
+  revertCourse,
+  submitCourseForReview,
+} from '../../services/content';
+import { Course, PublishStatus } from '../../types/content';
 
-const coursesData = [
-  {
-    id: 'course_html',
-    title: 'Mastering HTML: Building Web Foundations',
-    description: 'Learn the fundamental building blocks of the web. Structure content with semantic HTML5.',
-    level: 'Beginner',
-    duration: '4 Weeks',
-    lessons: 12,
-    rating: 4.8,
-    imageUrl: 'https://images.unsplash.com/photo-1549692520-cb2f08a47346?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Placeholder for course image
-    instructor: 'Aisha Nartey',
-    tags: ['Frontend', 'Web Development', 'Markup']
-  },
-  {
-    id: 'course_css',
-    title: 'Styling the Web: Deep Dive into CSS',
-    description: 'Transform plain HTML into beautiful, responsive web pages using modern CSS techniques.',
-    level: 'Beginner',
-    duration: '6 Weeks',
-    lessons: 18,
-    rating: 4.7,
-    imageUrl: 'https://images.unsplash.com/photo-1547658793-272e7d7a8d8e?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    instructor: 'Kwame Owusu',
-    tags: ['Frontend', 'Web Design', 'Styling']
-  },
-  {
-    id: 'course_js',
-    title: 'Interactive Web: JavaScript Fundamentals',
-    description: 'Bring your websites to life! Learn programming concepts and DOM manipulation with JavaScript.',
-    level: 'Intermediate',
-    duration: '8 Weeks',
-    lessons: 25,
-    rating: 4.9,
-    imageUrl: 'https://images.unsplash.com/photo-1550439062-cd037996c5e2?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    instructor: 'Kojo Mensah',
-    tags: ['Frontend', 'Programming', 'Logic']
-  },
-  {
-    id: 'course_react',
-    title: 'Building Dynamic UIs with React',
-    description: 'Develop powerful single-page applications using React.js, hooks, and component-based architecture.',
-    level: 'Advanced',
-    duration: '10 Weeks',
-    lessons: 30,
-    rating: 4.9,
-    imageUrl: 'https://images.unsplash.com/photo-1618391807759-4d6b3a0b5a32?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    instructor: 'Adwoa Boateng',
-    tags: ['Frontend', 'Framework', 'SPA']
-  },
-  {
-    id: 'course_python',
-    title: 'Python for Beginners: Data & Automation',
-    description: 'An easy-to-learn language for web development, data analysis, and scripting.',
-    level: 'Beginner',
-    duration: '7 Weeks',
-    lessons: 20,
-    rating: 4.6,
-    imageUrl: 'https://images.unsplash.com/photo-1507721999472-850f0edf0c8b?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    instructor: 'Yaw Acheampong',
-    tags: ['Backend', 'Scripting', 'Data Science']
-  },
-  {
-    id: 'course_git',
-    title: 'Version Control with Git & GitHub',
-    description: 'Master collaborative coding and project management using Git and GitHub.',
-    level: 'Intermediate',
-    duration: '3 Weeks',
-    lessons: 9,
-    rating: 4.5,
-    imageUrl: 'https://images.unsplash.com/photo-1629905206338-724d9834164b?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    instructor: 'Nana Ama Prempeh',
-    tags: ['Tools', 'Collaboration', 'DevOps']
-  }
-];
+const STATUS_LABELS: Record<PublishStatus, string> = {
+  draft: 'Draft',
+  in_review: 'In review',
+  published: 'Published',
+  archived: 'Archived',
+};
 
-const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
-const tags = ['All', 'Frontend', 'Backend', 'Web Development', 'Web Design', 'Programming', 'Logic', 'Framework', 'SPA', 'Scripting', 'Data Science', 'Tools', 'Collaboration', 'DevOps', 'Markup', 'Styling'];
+const STATUS_INTENT: Record<PublishStatus, string> = {
+  draft: 'bg-gray-100 text-gray-700',
+  in_review: 'bg-yellow-100 text-yellow-800',
+  published: 'bg-green-100 text-green-700',
+  archived: 'bg-slate-200 text-slate-600',
+};
 
-const AllCoursesPage = () => {
+type StatusFilter = PublishStatus | 'all';
+
+interface CreateCourseForm {
+  title: string;
+  summary: string;
+  description: string;
+  tags: string;
+}
+
+const initialCreateForm: CreateCourseForm = {
+  title: '',
+  summary: '',
+  description: '',
+  tags: '',
+};
+
+const AllCourses: React.FC = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState('All');
-  const [selectedTag, setSelectedTag] = useState('All');
-  const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateCourseForm>(initialCreateForm);
 
-  const filteredCourses = coursesData.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = selectedLevel === 'All' || course.level === selectedLevel;
-    const matchesTag = selectedTag === 'All' || course.tags.includes(selectedTag);
-    return matchesSearch && matchesLevel && matchesTag;
-  }).sort((a, b) => {
-    if (sortBy === 'rating') {
-      return b.rating - a.rating; // Descending
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => window.clearTimeout(handle);
+  }, [searchTerm]);
+
+  const loadCourses = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params: Record<string, string> = {};
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
+      }
+      const data = await listCourses(params);
+      setCourses(data);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load courses. Please retry.');
+    } finally {
+      setLoading(false);
     }
-    if (sortBy === 'duration') {
-      // Simple sorting for duration (e.g., "4 Weeks" vs "6 Weeks")
-      const durationA = parseInt(a.duration.split(' ')[0]);
-      const durationB = parseInt(b.duration.split(' ')[0]);
-      return durationA - durationB; // Ascending
+  }, [statusFilter, debouncedSearch]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  const handleCreateCourse = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!createForm.title.trim()) {
+      setError('Course title is required.');
+      return;
     }
-    if (sortBy === 'lessons') {
-      return b.lessons - a.lessons; // Descending
+    try {
+      setIsCreating(true);
+      const payload = {
+        title: createForm.title.trim(),
+        summary: createForm.summary.trim(),
+        description: createForm.description.trim(),
+        tags: createForm.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      };
+      const created = await createCourse(payload);
+      setCourses((prev) => [created, ...prev]);
+      setCreateForm(initialCreateForm);
+      setError(null);
+      return;
+    } catch (err) {
+      console.error(err);
+      setError('Could not create course. Check the details and try again.');
+    } finally {
+      setIsCreating(false);
     }
-    return 0;
-  });
+  };
+
+  const handleCourseTransition = async (
+    courseId: number,
+    action: 'submit' | 'publish' | 'revert',
+  ) => {
+    try {
+      let updated: Course;
+      if (action === 'submit') {
+        updated = (await submitCourseForReview(courseId)) as Course;
+      } else if (action === 'publish') {
+        updated = (await publishCourse(courseId)) as Course;
+      } else {
+        updated = (await revertCourse(courseId)) as Course;
+      }
+      setCourses((prev) => prev.map((course) => (course.id === updated.id ? updated : course)));
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError('Unable to update course status. Resolve validation issues and retry.');
+    }
+  };
+
+  const visibleCourses = useMemo(() => courses, [courses]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-6 md:p-10 font-sans">
-      {/* Header Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-4 animate-fade-in-down">
-          Explore Our <span className="text-purple-600">Coding Journeys</span>
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Dive into a diverse range of courses designed to equip you with the skills for the future of tech in Ghana and beyond.
-        </p>
-      </div>
-
-      {/* Search & Filters Section */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl mb-12 border border-gray-100">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-          {/* Search Input */}
-          <div className="md:col-span-2 relative">
-            <label htmlFor="course-search" className="block text-gray-700 text-sm font-medium mb-2">Search Courses</label>
-            <input
-              type="text"
-              id="course-search"
-              placeholder="e.g., JavaScript, Web Design, Frontend..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-purple-500 focus:border-purple-500 transition duration-200 text-gray-800"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl mt-4" />
-          </div>
-
-          {/* Level Filter */}
-          <div>
-            <label htmlFor="level-filter" className="block text-gray-700 text-sm font-medium mb-2">Filter by Level</label>
-            <div className="relative">
-              <select
-                id="level-filter"
-                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl appearance-none focus:ring-purple-500 focus:border-purple-500 transition duration-200 text-gray-800"
-                value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value)}
-              >
-                {levels.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-              <FiCode className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Tag Filter */}
-          <div>
-            <label htmlFor="tag-filter" className="block text-gray-700 text-sm font-medium mb-2">Filter by Category</label>
-            <div className="relative">
-              <select
-                id="tag-filter"
-                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl appearance-none focus:ring-purple-500 focus:border-purple-500 transition duration-200 text-gray-800"
-                value={selectedTag}
-                onChange={(e) => setSelectedTag(e.target.value)}
-              >
-                {tags.map(tag => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
-              <FiBookOpen className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Sort By */}
-          <div className="md:col-span-1">
-            <label htmlFor="sort-by" className="block text-gray-700 text-sm font-medium mb-2">Sort By</label>
-            <div className="relative">
-              <select
-                id="sort-by"
-                className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl appearance-none focus:ring-purple-500 focus:border-purple-500 transition duration-200 text-gray-800"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="rating">Popularity (Rating)</option>
-                <option value="duration">Shortest Duration</option>
-                <option value="lessons">Most Lessons</option>
-              </select>
-              <FiAward className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl pointer-events-none" />
-            </div>
-          </div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-900">Admin Course Production</h1>
+          <p className="text-gray-600">
+            Create courses, manage their publishing lifecycle, and drill into modules and lessons.
+          </p>
         </div>
-      </div>
+        <button
+          type="button"
+          onClick={loadCourses}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          <FiRefreshCw className="text-lg" /> Refresh
+        </button>
+      </header>
 
-      {/* Courses List Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {filteredCourses.length > 0 ? (
-          filteredCourses.map(course => (
-            <div
-              key={course.id}
-              className="bg-white rounded-3xl shadow-lg hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100"
-              onClick={() => alert(`Navigating to ${course.title} course details!`)}
-            >
-              <div className="relative h-48 w-full overflow-hidden rounded-t-3xl">
-                <img
-                  src={course.imageUrl}
-                  alt={course.title}
-                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                  {course.level}
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
-                  {course.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
-
-                <div className="flex items-center text-gray-500 text-sm mb-3">
-                  <FiClock className="mr-2 text-indigo-500" />
-                  <span>{course.duration}</span>
-                  <span className="mx-2">|</span>
-                  <FiBookOpen className="mr-2 text-teal-500" />
-                  <span>{course.lessons} Lessons</span>
-                </div>
-
-                <div className="flex items-center text-yellow-500 mb-4">
-                  <FiStar className="mr-1" />
-                  <span className="font-semibold text-gray-800">{course.rating}</span>
-                  <span className="text-gray-500 text-xs ml-1">({(Math.random() * 500 + 100).toFixed(0)} reviews)</span> {/* Random reviews for demo */}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {course.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-100 pt-4 flex items-center justify-between text-gray-600 text-sm">
-                  <span>Instructor: <span className="font-semibold text-gray-800">{course.instructor}</span></span>
-                  <button className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-300 ease-in-out transform hover:scale-105">
-                    Start Course
-                  </button>
-                </div>
-              </div>
+      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <form className="grid gap-4 md:grid-cols-4 md:items-end">
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="course-search">
+              Search
+            </label>
+            <input
+              id="course-search"
+              type="text"
+              placeholder="Search by title or description"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="status-filter">
+              Status
+            </label>
+            <div className="relative">
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                className="w-full appearance-none rounded-md border border-gray-300 px-3 py-2 pr-10 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              >
+                <option value="all">All statuses</option>
+                {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <FiFilter className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
-          ))
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCreating((prev) => !prev)}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700"
+          >
+            <FiPlus className="text-lg" /> New course
+          </button>
+        </form>
+
+        {isCreating && (
+          <form onSubmit={handleCreateCourse} className="mt-6 grid gap-4 rounded-lg bg-purple-50 p-4">
+            <div className="grid gap-2 md:grid-cols-2">
+              <label className="text-sm font-semibold text-purple-900" htmlFor="new-course-title">
+                Title
+              </label>
+              <input
+                id="new-course-title"
+                value={createForm.title}
+                onChange={(event) => setCreateForm((prev) => ({ ...prev, title: event.target.value }))}
+                required
+                className="md:col-span-1 rounded-md border border-purple-200 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              />
+              <label className="text-sm font-semibold text-purple-900" htmlFor="new-course-summary">
+                Summary
+              </label>
+              <input
+                id="new-course-summary"
+                value={createForm.summary}
+                onChange={(event) => setCreateForm((prev) => ({ ...prev, summary: event.target.value }))}
+                className="md:col-span-1 rounded-md border border-purple-200 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-purple-900" htmlFor="new-course-description">
+                Description
+              </label>
+              <textarea
+                id="new-course-description"
+                value={createForm.description}
+                onChange={(event) => setCreateForm((prev) => ({ ...prev, description: event.target.value }))}
+                rows={4}
+                className="w-full rounded-md border border-purple-200 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-purple-900" htmlFor="new-course-tags">
+                Tags (comma separated)
+              </label>
+              <input
+                id="new-course-tags"
+                value={createForm.tags}
+                onChange={(event) => setCreateForm((prev) => ({ ...prev, tags: event.target.value }))}
+                className="w-full rounded-md border border-purple-200 px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
+              >
+                {isCreating ? <FiLoader className="animate-spin" /> : <FiPlus />} Create course
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateForm(initialCreateForm);
+                  setIsCreating(false);
+                }}
+                className="text-sm font-medium text-purple-900 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+          <FiAlertCircle className="text-lg" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <section>
+        {loading ? (
+          <div className="flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white p-12 text-gray-500">
+            <FiLoader className="mr-2 animate-spin text-xl" /> Loading courses…
+          </div>
+        ) : visibleCourses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center text-gray-500">
+            <FiExternalLink className="text-2xl" />
+            <p>No courses match your filters yet.</p>
+          </div>
         ) : (
-          <div className="col-span-full text-center py-12 text-gray-500 text-xl bg-white rounded-xl shadow-md">
-            <p className="mb-4">
-              <FiSearch className="inline-block text-4xl mb-2" />
-            </p>
-            <p>No courses found matching your criteria. Try adjusting your search or filters!</p>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {visibleCourses.map((course) => {
+              const moduleCount = course.modules.length;
+              const lessonCount = course.modules.reduce((total, module) => total + module.lessons.length, 0);
+              return (
+                <article key={course.id} className="flex h-full flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold text-gray-900">{course.title}</h2>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_INTENT[course.status]}`}>
+                        {STATUS_LABELS[course.status]}
+                      </span>
+                    </div>
+                    {course.summary && <p className="text-sm text-gray-600">{course.summary}</p>}
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                      <span>{moduleCount} modules</span>
+                      <span>•</span>
+                      <span>{lessonCount} lessons</span>
+                      {course.tags.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{course.tags.join(', ')}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <Link
+                      to={`/courses/${course.id}`}
+                      className="inline-flex items-center gap-2 rounded-md border border-purple-200 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50"
+                    >
+                      <FiExternalLink /> Manage
+                    </Link>
+                    {course.status === 'draft' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCourseTransition(course.id, 'submit')}
+                        className="inline-flex items-center gap-2 rounded-md border border-yellow-200 px-3 py-2 text-sm font-medium text-yellow-700 hover:bg-yellow-50"
+                      >
+                        <FiEdit2 /> Submit for review
+                      </button>
+                    )}
+                    {course.status === 'in_review' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCourseTransition(course.id, 'publish')}
+                        className="inline-flex items-center gap-2 rounded-md border border-green-200 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-50"
+                      >
+                        <FiPlus /> Publish
+                      </button>
+                    )}
+                    {course.status !== 'draft' && course.status !== 'archived' && (
+                      <button
+                        type="button"
+                        onClick={() => handleCourseTransition(course.id, 'revert')}
+                        className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                      >
+                        <FiRefreshCw /> Revert to draft
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
-      </div>
-
-      {/* Optional: Call to Action/Footer element */}
-      <div className="mt-16 text-center text-gray-600">
-        <p className="text-lg">Can't find what you're looking for?</p>
-        <button className="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 transform hover:scale-105">
-          Suggest a Course Topic
-        </button>
-      </div>
+      </section>
     </div>
   );
 };
 
-export default AllCoursesPage;
+export default AllCourses;

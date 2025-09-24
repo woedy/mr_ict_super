@@ -18,7 +18,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 from django.conf import settings
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 from video_tutorials.serializers import AllRecordingsSerializer, CodeSnapshotRecordingSerializer, RecordingSerializer
@@ -352,7 +352,7 @@ def get_video_tutorial_details_view(request):
 
 @api_view(['GET'])
 #@permission_classes([IsAuthenticated])
-#@authentication_classes([TokenAuthentication])
+#@authentication_classes([JWTAuthentication])
 def get_all_recorded_turorial_view(request):
     payload = {}
     data = {}

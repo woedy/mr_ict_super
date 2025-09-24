@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -20,7 +20,7 @@ from teachers.serializers import AllTeachersSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def add_teacher_view(request):
     payload = {}
     data = {}
@@ -68,7 +68,7 @@ def add_teacher_view(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def get_all_teachers_view(request):
     payload = {}
     data = {}
@@ -120,7 +120,7 @@ def get_all_teachers_view(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_teacher_details_view(request):
     payload = {}
     data = {}
@@ -157,7 +157,7 @@ def get_teacher_details_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def edit_teacher(request):
     payload = {}
     data = {}
@@ -211,7 +211,7 @@ def edit_teacher(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def archive_teacher(request):
     payload = {}
     data = {}
@@ -250,7 +250,7 @@ def archive_teacher(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def unarchive_teacher(request):
     payload = {}
     data = {}
@@ -287,7 +287,7 @@ def unarchive_teacher(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_all_archived_teachers_view(request):
     payload = {}
     data = {}
@@ -336,7 +336,7 @@ def get_all_archived_teachers_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def delete_teacher(request):
     payload = {}
     data = {}

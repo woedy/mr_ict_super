@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -18,7 +18,7 @@ from courses.views.serializers import AllCodingChallengesSerializer, CodingChall
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def add_coding_challenge_view(request):
     payload = {}
     data = {}
@@ -72,7 +72,7 @@ def add_coding_challenge_view(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 def get_all_coding_challenges_view(request):
     payload = {}
     data = {}
@@ -124,7 +124,7 @@ def get_all_coding_challenges_view(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_coding_challenge_details_view(request):
     payload = {}
     data = {}
@@ -161,7 +161,7 @@ def get_coding_challenge_details_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def edit_coding_challenge(request):
     payload = {}
     data = {}
@@ -213,7 +213,7 @@ def edit_coding_challenge(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def archive_coding_challenge(request):
     payload = {}
     data = {}
@@ -252,7 +252,7 @@ def archive_coding_challenge(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def unarchive_coding_challenge(request):
     payload = {}
     data = {}
@@ -289,7 +289,7 @@ def unarchive_coding_challenge(request):
 
 @api_view(['GET', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def get_all_archived_coding_challenges_view(request):
     payload = {}
     data = {}
@@ -338,7 +338,7 @@ def get_all_archived_coding_challenges_view(request):
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@authentication_classes([JWTAuthentication, ])
 def delete_coding_challenge(request):
     payload = {}
     data = {}

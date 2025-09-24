@@ -239,6 +239,108 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
               </li>
               {/* <!-- Menu Item Challenges --> */}
 
+              <li>
+                <NavLink
+                  to="/assessments"
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium ${
+                      isActive
+                        ? 'bg-primary text-white dark:bg-meta-4 dark:text-white'
+                        : 'text-black hover:bg-bodydark1 hover:text-black dark:text-bodydark1 dark:hover:bg-meta-4'
+                    } duration-300 ease-in-out `
+                  }
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 3H15V5H3V3Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M3 7H15V9H3V7Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M3 11H10V13H3V11Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  Assessments
+                </NavLink>
+              </li>
+
+              <li>
+                <NavLink
+                  to="/progress"
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium ${
+                      isActive
+                        ? 'bg-primary text-white dark:bg-meta-4 dark:text-white'
+                        : 'text-black hover:bg-bodydark1 hover:text-black dark:text-bodydark1 dark:hover:bg-meta-4'
+                    } duration-300 ease-in-out `
+                  }
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 15H16V13H2V15Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M4 11H8V5H4V11Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M10 11H14V2H10V11Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                Progress & Rewards
+                </NavLink>
+              </li>
+
+              <li>
+                <NavLink
+                  to="/community/announcements"
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium ${
+                      isActive
+                        ? 'bg-primary text-white dark:bg-meta-4 dark:text-white'
+                        : 'text-black hover:bg-bodydark1 hover:text-black dark:text-bodydark1 dark:hover:bg-meta-4'
+                    } duration-300 ease-in-out `
+                  }
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 3H16V11H10L6 15V11H2V3Z"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Community
+                </NavLink>
+              </li>
+
 
               {/* <!-- Menu Item My Courses --> */}
               <li>
@@ -323,6 +425,96 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 </NavLink>
               </li>
               {/* <!-- Menu Item MY Challenges --> */}
+
+              <li>
+                <NavLink
+                  to="/sandbox"
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium ${
+                      isActive
+                        ? 'bg-primary text-white dark:bg-meta-4 dark:text-white'
+                        : 'text-black hover:bg-bodydark1 hover:text-black dark:text-bodydark1 dark:hover:bg-meta-4'
+                    } duration-300 ease-in-out `
+                  }
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="1"
+                      y="3"
+                      width="16"
+                      height="12"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M4 7H14"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M4 11H8"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Coding Sandbox
+                </NavLink>
+              </li>
+
+              <li>
+                <NavLink
+                  to="/projects/workspace"
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium ${
+                      isActive
+                        ? 'bg-primary text-white dark:bg-meta-4 dark:text-white'
+                        : 'text-black hover:bg-bodydark1 hover:text-black dark:text-bodydark1 dark:hover:bg-meta-4'
+                    } duration-300 ease-in-out `
+                  }
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="14"
+                      height="14"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M2 7H16"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M7 16V7"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Projects Workspace
+                </NavLink>
+              </li>
 
               {/* <!-- Menu Item My Projects --> */}
               <li>

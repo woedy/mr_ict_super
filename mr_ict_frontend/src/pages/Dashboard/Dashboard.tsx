@@ -1,451 +1,327 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import CardDataStats from '../../components/CardDataStats';
-import userImage from '../../images/user/user-01.png';
-import html from '../../images/html.png';
-import css from '../../images/css.png';
-import javascript from '../../images/javascript.png';
-import python from '../../images/python.png';
-import chale from '../../images/chale.png';
-
 import { Link } from 'react-router-dom';
-import { baseUrl, baseUrlMedia, projectID, truncateText, userID } from '../../constants';
-import api from '../../services/apiClient';
+import {
+  AcademicCapIcon,
+  BellIcon,
+  BoltIcon,
+  CheckCircleIcon,
+  EnvelopeIcon,
+  TrophyIcon,
+} from '@heroicons/react/24/outline';
+
+import CardDataStats from '../../components/CardDataStats';
+import {
+  CourseSummary,
+  DashboardData,
+  ResumeLearningItem,
+  fetchDashboard,
+} from '../../services/studentExperience';
+
+const DASHBOARD_CACHE_KEY = 'mrict_dashboard_cache';
+
+const initialOverview: DashboardData['overview'] = {
+  in_progress: 0,
+  completed: 0,
+  challenges_completed: 0,
+  xp: 0,
+};
+
+const getInitials = (first?: string, last?: string) => {
+  const firstInitial = first?.trim()?.charAt(0) ?? '';
+  const lastInitial = last?.trim()?.charAt(0) ?? '';
+  const initials = `${firstInitial}${lastInitial}`;
+  return initials ? initials.toUpperCase() : 'ST';
+};
+
+const formatProgressPercent = (value?: number | null) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return null;
+  }
+  return Math.round(value);
+};
 
 const Dashboard: React.FC = () => {
-  const [generatedCount, setGeneratedCount] = useState(0);
-  const [recentGenerated, setRecentGenerated] = useState([]);
-
-  const [loading, setLoading] = useState(false);
-
-  // State for alerts
-  const [alert, setAlert] = useState({ message: '', type: '' });
-
-  // Init State
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [usingCache, setUsingCache] = useState<boolean>(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    try {
-      const response = await api.get('homepage/student-dashboard/', {
-        params: { user_id: userID },
-      });
-      setGeneratedCount(response.data.data.generated_count);
+    setError(null);
+    setUsingCache(false);
 
-      console.log('#######################################');
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    try {
+      const payload = await fetchDashboard();
+      setData(payload);
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      const cached = localStorage.getItem(DASHBOARD_CACHE_KEY);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached) as DashboardData;
+          setData(parsed);
+          setUsingCache(true);
+        } catch (parseError) {
+          localStorage.removeItem(DASHBOARD_CACHE_KEY);
+          setError('We could not load your dashboard right now. Please try again.');
+        }
+      } else {
+        setError('We could not load your dashboard right now. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, userToken]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  const courseOverview = data?.overview ?? initialOverview;
+  const user = data?.user ?? { first_name: '', last_name: '', photo: null };
+  const notifications = data?.notifications ?? { unread: 0, messages: 0 };
+  const resumeLearning = data?.resume_learning ?? [];
+  const recommendedCourses = data?.recommended_courses ?? [];
+  const badges = data?.badges ?? [];
+  const practiceSections = data?.practice?.sections ?? [];
+  const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+
   return (
-    <>
-      <div className="grid grid-cols-3 gap-7">
-        <div className="col-span-2">
-          <h4 className="text-xl font-semibold text-black dark:text-white mb-4">
-            Course Overview
-          </h4>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 2xl:gap-7.5">
-            <CardDataStats title="In Progress" total={'2'}>
-              <svg
-                className="fill-primary dark:fill-white"
-                width="22"
-                height="22"
-                viewBox="0 0 22 22"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21.1063 18.0469L19.3875 3.23126C19.2157 1.71876 17.9438 0.584381 16.3969 0.584381H5.56878C4.05628 0.584381 2.78441 1.71876 2.57816 3.23126L0.859406 18.0469C0.756281 18.9063 1.03128 19.7313 1.61566 20.3844C2.20003 21.0375 2.99066 21.3813 3.85003 21.3813H18.1157C18.975 21.3813 19.8 21.0031 20.35 20.3844C20.9 19.7656 21.2094 18.9063 21.1063 18.0469ZM19.2157 19.3531C18.9407 19.6625 18.5625 19.8344 18.15 19.8344H3.85003C3.43753 19.8344 3.05941 19.6625 2.78441 19.3531C2.50941 19.0438 2.37191 18.6313 2.44066 18.2188L4.12503 3.43751C4.19378 2.71563 4.81253 2.16563 5.56878 2.16563H16.4313C17.1532 2.16563 17.7719 2.71563 17.875 3.43751L19.5938 18.2531C19.6282 18.6656 19.4907 19.0438 19.2157 19.3531Z"
-                  fill=""
-                />
-                <path
-                  d="M14.3345 5.29375C13.922 5.39688 13.647 5.80938 13.7501 6.22188C13.7845 6.42813 13.8189 6.63438 13.8189 6.80625C13.8189 8.35313 12.547 9.625 11.0001 9.625C9.45327 9.625 8.1814 8.35313 8.1814 6.80625C8.1814 6.6 8.21577 6.42813 8.25015 6.22188C8.35327 5.80938 8.07827 5.39688 7.66577 5.29375C7.25327 5.19063 6.84077 5.46563 6.73765 5.87813C6.6689 6.1875 6.63452 6.49688 6.63452 6.80625C6.63452 9.2125 8.5939 11.1719 11.0001 11.1719C13.4064 11.1719 15.3658 9.2125 15.3658 6.80625C15.3658 6.49688 15.3314 6.1875 15.2626 5.87813C15.1595 5.46563 14.747 5.225 14.3345 5.29375Z"
-                  fill=""
-                />
-              </svg>
-            </CardDataStats>
-            <CardDataStats title="Completed" total={'2/5'}>
-              <svg
-                className="fill-primary dark:fill-white"
-                width="22"
-                height="22"
-                viewBox="0 0 22 22"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21.1063 18.0469L19.3875 3.23126C19.2157 1.71876 17.9438 0.584381 16.3969 0.584381H5.56878C4.05628 0.584381 2.78441 1.71876 2.57816 3.23126L0.859406 18.0469C0.756281 18.9063 1.03128 19.7313 1.61566 20.3844C2.20003 21.0375 2.99066 21.3813 3.85003 21.3813H18.1157C18.975 21.3813 19.8 21.0031 20.35 20.3844C20.9 19.7656 21.2094 18.9063 21.1063 18.0469ZM19.2157 19.3531C18.9407 19.6625 18.5625 19.8344 18.15 19.8344H3.85003C3.43753 19.8344 3.05941 19.6625 2.78441 19.3531C2.50941 19.0438 2.37191 18.6313 2.44066 18.2188L4.12503 3.43751C4.19378 2.71563 4.81253 2.16563 5.56878 2.16563H16.4313C17.1532 2.16563 17.7719 2.71563 17.875 3.43751L19.5938 18.2531C19.6282 18.6656 19.4907 19.0438 19.2157 19.3531Z"
-                  fill=""
-                />
-                <path
-                  d="M14.3345 5.29375C13.922 5.39688 13.647 5.80938 13.7501 6.22188C13.7845 6.42813 13.8189 6.63438 13.8189 6.80625C13.8189 8.35313 12.547 9.625 11.0001 9.625C9.45327 9.625 8.1814 8.35313 8.1814 6.80625C8.1814 6.6 8.21577 6.42813 8.25015 6.22188C8.35327 5.80938 8.07827 5.39688 7.66577 5.29375C7.25327 5.19063 6.84077 5.46563 6.73765 5.87813C6.6689 6.1875 6.63452 6.49688 6.63452 6.80625C6.63452 9.2125 8.5939 11.1719 11.0001 11.1719C13.4064 11.1719 15.3658 9.2125 15.3658 6.80625C15.3658 6.49688 15.3314 6.1875 15.2626 5.87813C15.1595 5.46563 14.747 5.225 14.3345 5.29375Z"
-                  fill=""
-                />
-              </svg>
-            </CardDataStats>
-            <CardDataStats title="Challenges" total={'5/70'}>
-              <svg
-                className="fill-primary dark:fill-white"
-                width="22"
-                height="22"
-                viewBox="0 0 22 22"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21.1063 18.0469L19.3875 3.23126C19.2157 1.71876 17.9438 0.584381 16.3969 0.584381H5.56878C4.05628 0.584381 2.78441 1.71876 2.57816 3.23126L0.859406 18.0469C0.756281 18.9063 1.03128 19.7313 1.61566 20.3844C2.20003 21.0375 2.99066 21.3813 3.85003 21.3813H18.1157C18.975 21.3813 19.8 21.0031 20.35 20.3844C20.9 19.7656 21.2094 18.9063 21.1063 18.0469ZM19.2157 19.3531C18.9407 19.6625 18.5625 19.8344 18.15 19.8344H3.85003C3.43753 19.8344 3.05941 19.6625 2.78441 19.3531C2.50941 19.0438 2.37191 18.6313 2.44066 18.2188L4.12503 3.43751C4.19378 2.71563 4.81253 2.16563 5.56878 2.16563H16.4313C17.1532 2.16563 17.7719 2.71563 17.875 3.43751L19.5938 18.2531C19.6282 18.6656 19.4907 19.0438 19.2157 19.3531Z"
-                  fill=""
-                />
-                <path
-                  d="M14.3345 5.29375C13.922 5.39688 13.647 5.80938 13.7501 6.22188C13.7845 6.42813 13.8189 6.63438 13.8189 6.80625C13.8189 8.35313 12.547 9.625 11.0001 9.625C9.45327 9.625 8.1814 8.35313 8.1814 6.80625C8.1814 6.6 8.21577 6.42813 8.25015 6.22188C8.35327 5.80938 8.07827 5.39688 7.66577 5.29375C7.25327 5.19063 6.84077 5.46563 6.73765 5.87813C6.6689 6.1875 6.63452 6.49688 6.63452 6.80625C6.63452 9.2125 8.5939 11.1719 11.0001 11.1719C13.4064 11.1719 15.3658 9.2125 15.3658 6.80625C15.3658 6.49688 15.3314 6.1875 15.2626 5.87813C15.1595 5.46563 14.747 5.225 14.3345 5.29375Z"
-                  fill=""
-                />
-              </svg>
-            </CardDataStats>
-          </div>
+    <div className="space-y-8">
+      {loading && (
+        <div className="rounded-2xl bg-white p-6 text-center shadow-lg dark:bg-boxdark dark:text-white">
+          Loading your dashboard...
+        </div>
+      )}
 
-          <div>
-            <h4 className="text-xl font-semibold text-black dark:text-white mb-4 mt-9">
-              Resume Learning
-            </h4>
+      {!loading && error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-500/40 dark:bg-red-500/10">
+          <p className="font-semibold">{error}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="mt-4 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
-            <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-5 flex items-center">
-              {/* Left Side: Square background with Round Image */}
-              <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
+      {!loading && !error && data && (
+        <>
+          <section className="rounded-2xl bg-white p-6 shadow-lg dark:bg-boxdark dark:text-white">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              {user.photo ? (
                 <img
-                  src={html}
-                  alt="User Photo"
-                  className="w-16 h-16 object-contain"
+                  src={user.photo}
+                  alt={`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || 'Student avatar'}
+                  className="h-20 w-20 rounded-2xl object-cover"
                 />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-xl font-semibold text-primary">
+                  {getInitials(user.first_name, user.last_name)}
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="text-sm text-gray-500 dark:text-gray-300">Welcome back</p>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || 'Student'}
+                </h2>
               </div>
-
-              {/* Content Section */}
-              <div className="flex flex-col ml-6 space-y-2">
-                <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                  HTML
-                </p>
-                <p className="text-base font-medium text-gray-600 dark:text-gray-300">
-                  Lesson 01{' '}
-                  <span className="text-primary">Basics of inline CSS</span>
-                </p>
-              </div>
-
-              {/* Progress Section */}
-              <div className="ml-auto text-center space-y-1">
-                <p className="text-xl font-semibold text-primary">30%</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  14/50 Lessons
-                </p>
+              <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300 md:flex-row md:items-center">
+                <span className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-white/10">
+                  <BellIcon className="h-5 w-5" />
+                  {notifications.unread === 0 ? 'No new notifications' : `${notifications.unread} notifications`}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-white/10">
+                  <EnvelopeIcon className="h-5 w-5" />
+                  {notifications.messages} new message{notifications.messages === 1 ? '' : 's'}
+                </span>
               </div>
             </div>
-          </div>
+            {(usingCache || offline) && (
+              <div className="mt-4 rounded-xl border border-amber-300/60 bg-amber-500/10 p-4 text-sm text-amber-700 dark:border-amber-400/40 dark:text-amber-200">
+                {offline
+                  ? 'You are offline. Showing the latest data saved on this device.'
+                  : 'Showing cached dashboard data from your last session.'}
+              </div>
+            )}
+          </section>
 
-          <div>
-            <h4 className="text-xl font-semibold text-black dark:text-white mb-4 mt-9">
-              Available Courses
-            </h4>
+          <section>
+            <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Course overview</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <CardDataStats title="In progress" total={courseOverview.in_progress} rate="courses">
+                <AcademicCapIcon className="h-6 w-6 text-primary" />
+              </CardDataStats>
+              <CardDataStats title="Completed" total={courseOverview.completed} rate="courses">
+                <CheckCircleIcon className="h-6 w-6 text-primary" />
+              </CardDataStats>
+              <CardDataStats title="Challenges" total={courseOverview.challenges_completed} rate="completed">
+                <BoltIcon className="h-6 w-6 text-primary" />
+              </CardDataStats>
+              <CardDataStats title="XP earned" total={courseOverview.xp} rate="points">
+                <TrophyIcon className="h-6 w-6 text-primary" />
+              </CardDataStats>
+            </div>
+          </section>
 
-            <div className="grid grid-cols-2 gap-5">
-              <Link to="/lessons">
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-5 flex items-center">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={html}
-                      alt="htmll"
-                      className="w-16 h-16 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-6 space-y-2">
-                    <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                      HTML
-                    </p>
-                    <p className="">The language for building web pages</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      50 Lessons
-                    </p>
-                  </div>
-                </div>
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-black dark:text-white">Resume learning</h3>
+              <Link to="/all-my-courses" className="text-sm font-semibold text-primary hover:text-primary/80">
+                View all courses
               </Link>
-
-              <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-5 flex items-center">
-                {/* Left Side: Square background with Round Image */}
-                <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                  <img
-                    src={css}
-                    alt="csss"
-                    className="w-16 h-16 object-contain"
-                  />
-                </div>
-
-                {/* Content Section */}
-                <div className="flex flex-col ml-6 space-y-2">
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                    CSS
-                  </p>
-                  <p className="">The language for building web pages</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    50 Lessons
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-5 flex items-center">
-                {/* Left Side: Square background with Round Image */}
-                <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                  <img
-                    src={javascript}
-                    alt="javascript"
-                    className="w-16 h-16 object-contain"
-                  />
-                </div>
-
-                {/* Content Section */}
-                <div className="flex flex-col ml-6 space-y-2">
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                    Javascript
-                  </p>
-                  <p className="">The language for building web pages</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    50 Lessons
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-5 flex items-center">
-                {/* Left Side: Square background with Round Image */}
-                <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                  <img
-                    src={python}
-                    alt="pythom"
-                    className="w-16 h-16 object-contain"
-                  />
-                </div>
-
-                {/* Content Section */}
-                <div className="flex flex-col ml-6 space-y-2">
-                  <p className="text-lg font-semibold text-gray-800 dark:text-white">
-                    PYTHON
-                  </p>
-                  <p className="">The language for building web pages</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    50 Lessons
-                  </p>
-                </div>
-              </div>
             </div>
-          </div>
+            {resumeLearning.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {resumeLearning.map((lesson: ResumeLearningItem) => {
+                  const percent = formatProgressPercent(lesson.progress_percent);
+                  const lessonsCompleted = lesson.lessons_completed ?? 0;
+                  const totalLessons = lesson.total_lessons ?? 0;
+                  const fallbackLetter = lesson.course_title?.charAt(0) ?? lesson.lesson_title?.charAt(0) ?? 'L';
+
+                  return (
+                    <Link
+                      key={lesson.student_lesson_id}
+                      to={`/lesson?lesson_id=${lesson.lesson_id}`}
+                      className="flex items-center gap-5 rounded-2xl bg-white p-5 shadow-lg transition hover:-translate-y-1 hover:shadow-xl dark:bg-boxdark"
+                    >
+                      <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-xl font-semibold text-primary">
+                        {lesson.thumbnail ? (
+                          <img src={lesson.thumbnail} alt={lesson.lesson_title ?? 'Lesson'} className="h-full w-full object-cover" />
+                        ) : (
+                          fallbackLetter.toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <p className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400">{lesson.course_title}</p>
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{lesson.lesson_title}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {lessonsCompleted}/{totalLessons} lessons completed
+                          {percent !== null && <span className="ml-2 text-primary">({percent}% complete)</span>}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-6 text-center text-sm text-primary">
+                You&apos;re all caught up! Start a new lesson from the catalog below.
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Recommended courses</h3>
+            {recommendedCourses.length > 0 ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {recommendedCourses.map((course: CourseSummary) => {
+                  const fallbackLetter = course.title?.charAt(0) ?? 'C';
+                  return (
+                    <Link
+                      to={`/lessons?course_id=${course.course_id}`}
+                      key={`${course.course_id ?? course.slug ?? course.title}`}
+                      className="flex items-start gap-4 rounded-2xl bg-white p-5 shadow-lg transition hover:-translate-y-1 hover:shadow-xl dark:bg-boxdark"
+                    >
+                      <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-lg font-semibold text-primary">
+                        {course.image ? (
+                          <img src={course.image} alt={course.title ?? 'Course'} className="h-full w-full object-cover" />
+                        ) : (
+                          fallbackLetter.toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{course.title}</h4>
+                        {course.summary && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{course.summary}</p>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {course.level || 'Self paced'} · {course.lessons_count} lessons
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                Courses will appear here once your school assigns them to you.
+              </div>
+            )}
+          </section>
+
+          {badges.length > 0 && (
+            <section>
+              <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Recently earned badges</h3>
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {badges.map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="min-w-[200px] rounded-2xl bg-white p-4 shadow-lg dark:bg-boxdark"
+                  >
+                    <div className="mb-3 flex items-center gap-3">
+                      {badge.image ? (
+                        <img src={badge.image} alt={badge.name ?? 'Badge'} className="h-12 w-12 rounded-xl object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <TrophyIcon className="h-6 w-6" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{badge.name}</p>
+                        {badge.challenge_title && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{badge.challenge_title}</p>
+                        )}
+                      </div>
+                    </div>
+                    {badge.criteria && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{badge.criteria}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section>
+            <h3 className="mb-4 text-xl font-semibold text-black dark:text-white">Practice challenges</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {practiceSections.map((section) => (
+                <div key={section.title} className="rounded-2xl bg-white p-4 shadow-lg dark:bg-boxdark">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{section.title}</h4>
+                  <ul className="mt-3 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                    {section.items.length > 0 ? (
+                      section.items.map((challenge) => (
+                        <li key={challenge.id} className="rounded-lg bg-gray-100 p-3 dark:bg-white/5">
+                          <p className="font-medium text-gray-800 dark:text-white">{challenge.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Difficulty: {challenge.difficulty ?? 'N/A'}
+                          </p>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="rounded-lg border border-dashed border-gray-300 p-3 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                        No challenges yet.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {!loading && !error && !data && (
+        <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          We couldn&apos;t find any dashboard data. Please try refreshing the page.
         </div>
-        <div className="col-span-1">
-          <h4 className="text-xl font-semibold text-black dark:text-white mb-4">
-            Challenges
-          </h4>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5 mb-4">
-            <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-              <div className="py-5 px-4 md:px-6 xl:px-7.5">
-                <div className="flex justify-between">
-                  <h4 className="text-base font-semibold text-black dark:text-white">
-                    HTML Challenges
-                  </h4>
-                  <h4 className="text-xs font-semibold  dark:text-white">
-                    View All
-                  </h4>
-                </div>
-
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={html}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain "
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={html}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5 mb-4">
-            <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-              <div className="py-5 px-4 md:px-6 xl:px-7.5">
-                <div className="flex justify-between">
-                  <h4 className="text-base font-semibold text-black dark:text-white">
-                    HTML Challenges
-                  </h4>
-                  <h4 className="text-xs font-semibold  dark:text-white">
-                    View All
-                  </h4>
-                </div>
-
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={css}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={css}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5 mb-4">
-            <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-              <div className="py-5 px-4 md:px-6 xl:px-7.5">
-                <div className="flex justify-between">
-                  <h4 className="text-base font-semibold text-black dark:text-white">
-                    Javascript Challenges
-                  </h4>
-                  <h4 className="text-xs font-semibold  dark:text-white">
-                    View All
-                  </h4>
-                </div>
-
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={javascript}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-3">
-                  {/* Left Side: Square background with Round Image */}
-                  <div className="w-20 h-20 bg-primary rounded-xl flex justify-center items-center shadow-lg overflow-hidden">
-                    <img
-                      src={javascript}
-                      alt="User Photo"
-                      className="w-10 h-10 object-contain"
-                    />
-                  </div>
-
-                  {/* Content Section */}
-                  <div className="flex flex-col ml-3 space-y-1">
-                    <p className="">
-                      {
-                        'How to control the line breaks and spaces with the <pre> tag'
-                      }
-                    </p>
-                  </div>
-
-                  <img
-                    src={chale}
-                    alt="User Photo"
-                    className="w-5 h-5 object-contain ml-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

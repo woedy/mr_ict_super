@@ -1,81 +1,179 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../../services/apiClient';
-
-type Lesson = {
-  lesson_id: string;
-  title: string;
-  description?: string;
-  order: number;
-};
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  CourseDetail,
+  enrollInCourse,
+  fetchCourseDetail,
+} from '../../services/studentExperience';
 
 const Lessons: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [page, setPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [search, setSearch] = useState<string>('');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const courseId = query.get('course_id');
 
-  const fetchData = useCallback(async () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
+
+  const loadCourse = useCallback(async () => {
+    if (!courseId) {
+      setCourse(null);
+      setError('Select a course from your dashboard or catalog to see its lessons.');
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
-      const response = await api.get('courses/get-all-lessons/', {
-        params: { page, search },
-      });
-      const data = response.data?.data;
-      setLessons(data?.lessons || []);
-      setTotalPages(data?.pagination?.total_pages || 1);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      const detail = await fetchCourseDetail(courseId);
+      setCourse(detail);
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'We could not load this course.';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [courseId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadCourse();
+  }, [loadCourse]);
+
+  const handleEnroll = async () => {
+    if (!courseId) return;
+    setEnrolling(true);
+    setError(null);
+    try {
+      const detail = await enrollInCourse(courseId);
+      setCourse(detail);
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'Unable to enroll in this course.';
+      setError(message);
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   return (
-    <>
-      <div className="max-w-5xl mx-auto px-4">
-        <h4 className="text-xl font-semibold text-black dark:text-white mb-4 mt-9">Lessons</h4>
-        <div className="flex items-center mb-4 gap-2">
-          <input
-            value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
-            placeholder="Search lessons"
-            className="p-2 border rounded w-full max-w-md"
-          />
+    <div className="mx-auto mt-9 max-w-5xl px-4">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h4 className="text-xl font-semibold text-black dark:text-white">Lessons</h4>
+          {course && (
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              {course.title} · {course.modules.reduce((count, module) => count + module.lessons.length, 0)} lessons
+            </p>
+          )}
         </div>
-        {loading && <p>Loading...</p>}
-        {!loading && (
-          <div className="space-y-3">
-            {lessons.map((l) => (
-              <Link key={l.lesson_id} to={`/lesson?lesson_id=${l.lesson_id}`}>
-                <div className="rounded-2xl bg-white shadow-lg dark:bg-boxdark dark:border-strokedark p-3 flex items-center mb-2">
-                  <div className="w-10 h-10 bg-primary rounded-xl flex justify-center items-center text-white font-bold">
-                    {l.order}
-                  </div>
-                  <div className="flex flex-col ml-6 space-y-1">
-                    <p className="text-lg font-semibold text-gray-800 dark:text-white">{l.title}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{l.description}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-2 mt-6">
-          <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
-          <span>Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
-        </div>
+        <button
+          onClick={() => navigate('/all-courses')}
+          className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+        >
+          Browse catalog
+        </button>
       </div>
-    </>
+
+      {!courseId && (
+        <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
+          Select a course to view its lessons.
+        </div>
+      )}
+
+      {loading && (
+        <div className="rounded-2xl bg-white p-6 text-center shadow dark:bg-boxdark dark:text-white">Loading lessons…</div>
+      )}
+
+      {!loading && error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-500/40 dark:bg-red-500/10">
+          <p className="font-semibold">{error}</p>
+          {courseId && (
+            <button
+              type="button"
+              onClick={loadCourse}
+              className="mt-4 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+
+      {!loading && !error && course && (
+        <div className="space-y-8">
+          <section className="rounded-2xl bg-white p-6 shadow dark:bg-boxdark dark:text-white">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold">{course.title}</h2>
+                {course.summary && <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{course.summary}</p>}
+                <p className="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {course.level || 'Self paced'} · {course.modules.length} modules · {course.estimated_duration_minutes} mins
+                </p>
+              </div>
+              <div className="flex flex-col items-stretch gap-2 md:w-48">
+                {!course.is_enrolled ? (
+                  <button
+                    onClick={handleEnroll}
+                    disabled={enrolling}
+                    className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {enrolling ? 'Enrolling…' : 'Enroll now'}
+                  </button>
+                ) : (
+                  <Link
+                    to={course.resume_lesson_id ? `/lesson?lesson_id=${course.resume_lesson_id}` : '#'}
+                    className="rounded-full border border-primary px-4 py-2 text-center text-sm font-semibold text-primary hover:bg-primary/10"
+                  >
+                    {course.resume_lesson_id ? 'Resume where you left off' : 'Start first lesson'}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {course.modules.length > 0 ? (
+            course.modules.map((module) => (
+              <section key={module.id} className="rounded-2xl bg-white p-6 shadow dark:bg-boxdark dark:text-white">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Module {module.order}: {module.title}</h3>
+                {module.description && (
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{module.description}</p>
+                )}
+                <ul className="mt-4 space-y-3">
+                  {module.lessons.map((lesson) => (
+                    <li key={lesson.lesson_id} className="rounded-2xl border border-gray-200 p-4 transition hover:border-primary hover:shadow dark:border-gray-700">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400">Lesson {lesson.order}</p>
+                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{lesson.title}</h4>
+                          {lesson.description && (
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{lesson.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {(lesson.duration_seconds / 60).toFixed(0)} mins
+                          </span>
+                          <Link
+                            to={`/lesson?lesson_id=${lesson.lesson_id}`}
+                            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+                          >
+                            Open lesson
+                          </Link>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
+              Lessons are on their way. Check back soon.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

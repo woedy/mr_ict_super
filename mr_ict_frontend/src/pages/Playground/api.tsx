@@ -1,27 +1,10 @@
-import axios from 'axios';
+import api from '../../services/apiClient';
 
-const API_URL = 'http://localhost:8000/api/';
-
-// Configure axios with authentication
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Fetch all projects
-export const fetchProjects = () => apiClient.get('projects/');
-
-// Fetch a specific project by ID
-export const fetchProject = (id) => apiClient.get(`projects/${id}/`);
-
-// Fetch project files by project ID
-export const fetchProjectFiles = (projectId) => apiClient.get(`project_files/by_project/?project=${projectId}`);
-
-// Update a specific file by file ID
-export const updateFile = (fileId, content) => apiClient.patch(`project_files/${fileId}/`, { content });
-
-// Create a new project (using POST)
-export const createProject = (projectData) => apiClient.post('projects/create/', projectData);
+export const fetchProjects = () => api.get('projects/');
+export const fetchProject = (id: number | string) => api.get(`projects/${id}/`);
+export const fetchProjectFiles = (projectId: number | string) =>
+  api.get(`project_files/by_project/?project=${projectId}`);
+export const updateFile = (fileId: number | string, content: unknown) =>
+  api.patch(`project_files/${fileId}/`, { content });
+export const createProject = (projectData: unknown) => api.post('projects/create/', projectData);
 
