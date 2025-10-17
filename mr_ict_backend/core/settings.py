@@ -31,6 +31,7 @@ env = environ.Env(
     CORS_ALLOWED_ORIGINS=(list[str], []),
     CORS_ALLOW_ALL_ORIGINS=(bool, False),
     CORS_ALLOW_CREDENTIALS=(bool, True),
+    CORS_ALLOW_HEADERS=(list[str], ["accept", "accept-encoding", "authorization", "content-type", "dnt", "origin", "user-agent", "x-csrftoken", "x-request-id"]),
     CSRF_TRUSTED_ORIGINS=(list[str], []),
     REDIS_URL=(str, "redis://localhost:6379/0"),
     SIMPLE_JWT_ACCESS_LIFETIME_MIN=(int, 30),
@@ -195,6 +196,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "user_id",  # Use the custom user_id field instead of default id
 }
 
 # CORS configuration keeps local dev permissive but production strict
@@ -202,6 +204,7 @@ CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=DEBUG)
 if not CORS_ALLOW_ALL_ORIGINS:
     CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS")
+CORS_ALLOW_HEADERS = env.list("CORS_ALLOW_HEADERS", default=["accept", "accept-encoding", "authorization", "content-type", "dnt", "origin", "user-agent", "x-csrftoken", "x-request-id"])
 
 # Security toggles for production
 if not DEBUG:

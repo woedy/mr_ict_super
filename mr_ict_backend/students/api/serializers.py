@@ -403,7 +403,7 @@ class StudentProjectDetailSerializer(StudentProjectSerializer):
 
 
 class LessonAssetSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
+    id = serializers.CharField()  # Changed from IntegerField to CharField to handle UUIDs
     type = serializers.CharField()
     url = serializers.CharField()
     duration = serializers.FloatField(required=False, allow_null=True)

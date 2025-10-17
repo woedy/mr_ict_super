@@ -214,41 +214,41 @@ class StudentLogin(APIView):
         if not fcm_token:
             errors['fcm_token'] = ['FCM device token is required.']
 
-        try:
-            qs = User.objects.filter(email=email)
-        except User.DoesNotExist:
-            errors['email'] = ['User does not exist.']
-
-
-
-        if qs.exists():
-            not_active = qs.filter(email_verified=False)
-            if not_active:
-                errors['email'] = ["Please check your email to confirm your account or resend confirmation email."]
-
-        if not check_password(email, password):
-            errors['password'] = ['Invalid Credentials']
-
-        user = authenticate(email=email, password=password)
-
-
-        if not user:
-            errors['email'] = ['Invalid Credentials']
-
-
-
         if errors:
             payload['message'] = "Errors"
             payload['errors'] = errors
             return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            errors['email'] = ['User does not exist.']
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.email_verified:
+            errors['email'] = ["Please check your email to confirm your account or resend confirmation email."]
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(password):
+            errors['password'] = ['Invalid Credentials']
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.user_type != "Student":
+            errors['email'] = ['This account is not a student account.']
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
         user.fcm_token = fcm_token
         user.save()
 
-
         data["user_id"] = user.user_id
-        data["student_id"] = user.student.student_id
         data["email"] = user.email
         data["first_name"] = user.first_name
         data["last_name"] = user.last_name
@@ -256,12 +256,20 @@ class StudentLogin(APIView):
         data["photo"] = photo.url if photo and hasattr(photo, "url") else None
         data["country"] = user.country
         data["phone"] = user.phone
-        data["epz"] = user.student.epz
-        data["requires_onboarding"] = not getattr(user.student, "has_completed_onboarding", False)
-        data.update(issue_tokens_for_user(user))
 
-        print("##############")
-        print(user.student.epz)
+        # Handle student profile safely
+        try:
+            student = user.student
+            data["student_id"] = student.student_id
+            data["epz"] = student.epz
+            data["requires_onboarding"] = not getattr(student, "has_completed_onboarding", False)
+        except AttributeError:
+            # User doesn't have a student profile yet
+            data["student_id"] = None
+            data["epz"] = 0
+            data["requires_onboarding"] = True
+
+        data.update(issue_tokens_for_user(user))
 
         payload['message'] = "Successful"
         payload['data'] = data
@@ -328,7 +336,8 @@ def verify_admin_email(request):
     data["email"] = user.email
     data["first_name"] = user.first_name
     data["last_name"] = user.last_name
-    data["photo"] = user.photo.url
+    photo = getattr(user, 'photo', None)
+    data["photo"] = photo.url if photo and hasattr(photo, 'url') else None
     data.update(issue_tokens_for_user(user))
 
     payload['message'] = "Successful"
