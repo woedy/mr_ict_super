@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { baseUrl } from '../../../constants';
+import { resolveApiPath } from '../../../services/apiClient';
 import backCover from '../../../images/cover/ges.jpg';
 import Logo from '../../../images/logo/mrict_logo.jpg';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -42,7 +42,7 @@ const ForgotPassword = () => {
 
     if (!isValid) return;
 
-    const url = baseUrl + 'api/accounts/forgot-user-password/';
+    const url = resolveApiPath('accounts/forgot-user-password/');
     const data = {
       email,
     };

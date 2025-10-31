@@ -387,11 +387,13 @@ def verify_client_email(request):
 
     if not email_token:
         token_errors.append('Token is required.')
+    elif len(email_token) != 4 or not email_token.isdigit():
+        token_errors.append('Token must be a 4-digit code.')
 
     user = None
     if qs.exists():
         user = qs.first()
-        if email_token != user.email_token:
+        if not token_errors and email_token != user.email_token:
             token_errors.append('Invalid Token.')
 
     if token_errors:

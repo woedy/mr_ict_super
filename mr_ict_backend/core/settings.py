@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # deployments provide their own environment values.
 env = environ.Env(
     DJANGO_DEBUG=(bool, True),
-    DJANGO_ALLOWED_HOSTS=(list[str], ["localhost", "127.0.0.1"]),
+    DJANGO_ALLOWED_HOSTS=(list[str], ["localhost", "127.0.0.1", "testserver"]),
     DJANGO_SECRET_KEY=(str, "dev-insecure-key"),
     DJANGO_EMAIL_PORT=(int, 587),
     DJANGO_EMAIL_USE_TLS=(bool, True),
@@ -49,7 +49,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG: bool = env("DJANGO_DEBUG")
 
 # Hosts & trusted origins are env-driven to avoid accidental wildcards in prod
-ALLOWED_HOSTS: List[str] = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+ALLOWED_HOSTS: List[str] = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "testserver"])
 CSRF_TRUSTED_ORIGINS: List[str] = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 # Application definition
