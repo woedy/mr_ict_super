@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { baseUrl } from '../../constants';
+import { resolveApiPath } from '../../services/apiClient';
 import ButtonLoader from '../../common/button_loader';
 import backCover from '../../images/cover/ges.jpg';
 import Logo from '../../images/logo/mrict_logo.jpg';
@@ -41,7 +41,7 @@ const VerifyEmail = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(baseUrl + 'api/accounts/verify-email/', {
+      const response = await fetch(resolveApiPath('accounts/verify-email/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,16 +82,13 @@ const VerifyEmail = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        baseUrl + 'api/accounts/resend-email-verification/',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-          }),
-        },
-      );
+      const response = await fetch(resolveApiPath('accounts/resend-email-verification/'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+        }),
+      });
 
       const data = await response.json();
 

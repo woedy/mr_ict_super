@@ -1,6 +1,13 @@
 import json
+import os
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
+
+import django
+
+django.setup()
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -272,7 +279,7 @@ class EmailVerificationTests(APITestCase):
         )
         self.user.user_type = "Student"
         self.user.email_verified = False
-        self.user.email_token = "123456"  # Set a known token for testing
+        self.user.email_token = "1234"  # Set a known token for testing
         self.user.save()
 
         self.student = Student.objects.create(user=self.user, school=self.school)
@@ -281,7 +288,7 @@ class EmailVerificationTests(APITestCase):
         """Test successful email verification with correct token"""
         data = {
             "email": "verifytest@example.com",
-            "email_token": "123456",
+            "email_token": "1234",
         }
 
         url = reverse("accounts:verify_student_email")
@@ -304,7 +311,7 @@ class EmailVerificationTests(APITestCase):
         """Test email verification with incorrect token"""
         data = {
             "email": "verifytest@example.com",
-            "email_token": "wrongtoken",
+            "email_token": "9999",
         }
 
         url = reverse("accounts:verify_student_email")
@@ -321,7 +328,7 @@ class EmailVerificationTests(APITestCase):
         """Test email verification with email that doesn't exist"""
         data = {
             "email": "nonexistent@example.com",
-            "email_token": "123456",
+            "email_token": "1234",
         }
 
         url = reverse("accounts:verify_student_email")

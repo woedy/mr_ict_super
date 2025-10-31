@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { baseUrl } from '../../../constants';
+import { resolveApiPath } from '../../../services/apiClient';
 import ButtonLoader from '../../../common/button_loader';
 import backCover from '../../../images/cover/ges.jpg';
 import Logo from '../../images/logo/mrict_logo.jpg';
@@ -41,17 +41,14 @@ const ConfirmPasswordOTP = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        baseUrl + 'api/accounts/confirm-password-otp/',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-            otp_code: code,
-          }),
-        },
-      );
+      const response = await fetch(resolveApiPath('accounts/confirm-password-otp/'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          otp_code: code,
+        }),
+      });
 
       const data = await response.json();
 
@@ -83,16 +80,13 @@ const ConfirmPasswordOTP = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        baseUrl + 'api/accounts/resend-password-otp/',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-          }),
-        },
-      );
+      const response = await fetch(resolveApiPath('accounts/resend-password-otp/'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+        }),
+      });
 
       const data = await response.json();
 

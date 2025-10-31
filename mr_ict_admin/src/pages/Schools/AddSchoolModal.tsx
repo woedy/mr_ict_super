@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { baseUrl } from '../../constants';
+import { resolveApiPath } from '../../services/apiClient';
 import { Link, useNavigate } from 'react-router-dom';
 
 const AddSchoolModal = ({ isOpen, onClose }) => {
@@ -46,7 +46,7 @@ const AddSchoolModal = ({ isOpen, onClose }) => {
     formData.append('last_name', lastName);
     formData.append('bio', bio);
 
-    const url = baseUrl + 'api/accounts/admin/add-user/';
+    const url = resolveApiPath('accounts/admin/add-user/');
 
     try {
       setLoading(true);
