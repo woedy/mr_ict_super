@@ -9,7 +9,7 @@ export function CommunityPage() {
         <header className="space-y-3">
           <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Community studio</h1>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Share wins, ask for feedback, and celebrate inclusive ICT storytelling across Ghana.
+            Share wins, ask for feedback, and celebrate inclusive ICT storytelling across Ghana and Africa.
           </p>
         </header>
         <div className="space-y-4">

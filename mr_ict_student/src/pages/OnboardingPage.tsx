@@ -16,7 +16,7 @@ export function OnboardingPage() {
   const [accessNeeds, setAccessNeeds] = useState<string[]>(student?.accessibility ?? ['Live captions'])
   const [availability, setAvailability] = useState(student?.availability ?? availabilityOptions[2])
   const [learningGoals, setLearningGoals] = useState(
-    student?.learningGoals ?? 'Tell technology stories that resonate with Ghanaian classrooms.',
+    student?.learningGoals ?? 'Tell technology stories that resonate with JHS and SHS classrooms across Ghana and Africa.',
   )
   const [preferredMode, setPreferredMode] = useState<'online' | 'offline' | 'hybrid'>(student?.preferredMode ?? 'hybrid')
 

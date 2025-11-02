@@ -60,7 +60,7 @@ export function SandboxPage() {
               ? `:root {\n  --accent: #ffb151;\n}\n\n.hero {\n  display: grid;\n  place-items: start;\n  padding: 4rem;\n  background: linear-gradient(135deg, #1f8f7a, #ffb151);\n  color: #fff;\n}\n\n.hero button {\n  background: #fff;\n  color: #1f8f7a;\n  border-radius: 9999px;\n  padding: 0.75rem 1.5rem;\n}`
               : null}
             {activeTab === 'output'
-              ? `Preview your layout here. Imagine the live reload with your Ghanaian inspired gradients and typography.`
+              ? `Preview your layout here. Imagine the live reload with your African-inspired gradients and typography.`
               : null}
           </pre>
         </div>

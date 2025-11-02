@@ -1,11 +1,10 @@
-import { BoltIcon, PlayCircleIcon } from '@heroicons/react/24/outline'
+import { PlayCircleIcon } from '@heroicons/react/24/outline'
 import { Link } from 'react-router-dom'
 import { AssessmentCard } from '../components/AssessmentCard'
 import { AnnouncementCard } from '../components/AnnouncementCard'
 import { JourneyTimeline } from '../components/JourneyTimeline'
 import { PracticeChallengeCard } from '../components/PracticeChallengeCard'
 import { SessionCard } from '../components/SessionCard'
-import { StatCard } from '../components/StatCard'
 import { useStudentJourney } from '../context/StudentJourneyContext'
 import {
   announcements,
@@ -24,114 +23,164 @@ export function DashboardPage() {
   const nextCourse = enrolledCourses[0]
 
   return (
-    <div className="space-y-10">
-      <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
-          <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Hero Welcome Section */}
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-md dark:border-slate-700 dark:bg-slate-800">
+        <div className="relative z-10">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Good to see you,</p>
-              <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{student?.firstName}</h1>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Welcome back! 👋</p>
+              <h1 className="mt-1 text-4xl font-bold text-slate-900 dark:text-white">{student?.firstName}</h1>
+              <p className="mt-2 text-base text-slate-600 dark:text-slate-400">Ready to level up your ICT skills today?</p>
             </div>
             <Link
               to="/onboarding"
-              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-primary-400 hover:text-primary-600 dark:border-slate-700 dark:text-slate-300"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
             >
-              Update preferences
+              ⚙️ Settings
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              label="Total XP"
-              value={`${formatNumber(student?.xp ?? 0)} XP`}
-              helper="Across lessons, projects, and workshops"
-            />
-            <StatCard label="Streak" value={`${student?.streak ?? 0} days`} helper="Keep learning daily" accent="accent" />
-            <StatCard label="Badges" value={`${student?.badges ?? 0}`} helper="Earned from community kudos" />
-            <StatCard
-              label="Offline packs"
-              value="3 ready"
-              helper="Sync to your ICT lab device"
-              icon={<BoltIcon className="h-8 w-8" />}
-              accent="midnight"
-            />
+        </div>
+      </section>
+
+      {/* Stats Grid */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Total XP</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{formatNumber(student?.xp ?? 0)}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Keep learning to earn more!</p>
           </div>
+        </div>
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">🔥 Streak</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{student?.streak ?? 0} days</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Don't break the chain!</p>
+          </div>
+        </div>
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">🏆 Badges</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{student?.badges ?? 0}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Achievements unlocked</p>
+          </div>
+        </div>
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">⚡ Offline Packs</p>
+            <p className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">3</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Ready to sync</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content Grid */}
+      <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* Left Column */}
+        <div className="space-y-6">
+          {/* Continue Learning Card */}
           {nextCourse ? (
-            <div className="rounded-3xl border border-dashed border-primary-400/60 bg-primary-500/5 p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">Resume learning</p>
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{nextCourse.title}</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{nextCourse.spotlight}</p>
+            <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-md transition hover:shadow-lg dark:border-slate-700 dark:bg-slate-800">
+              <div className="relative z-10">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">📚 Continue Learning</p>
+                    <h2 className="mt-3 text-2xl font-bold text-slate-900 dark:text-white">{nextCourse.title}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{nextCourse.spotlight}</p>
+                  </div>
                 </div>
                 <Link
                   to={`/courses/${nextCourse.id}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary-500 px-5 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-400"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-primary-700"
                 >
-                  Continue lesson
                   <PlayCircleIcon className="h-5 w-5" />
+                  Resume Lesson
                 </Link>
               </div>
             </div>
           ) : null}
-        </div>
-        <div className="flex h-full flex-col justify-between gap-6 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary-500">Daily reflection</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{dailyFocus.date}</h2>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-              <span className="font-semibold text-primary-600 dark:text-primary-200">Win:</span> {dailyFocus.win}
-            </p>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-              <span className="font-semibold text-primary-600 dark:text-primary-200">Focus:</span> {dailyFocus.intention}
-            </p>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-              <span className="font-semibold text-primary-600 dark:text-primary-200">Encouragement:</span>{' '}
-              {dailyFocus.encouragement}
-            </p>
+
+          {/* Assessments Section */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">📝 Assessments</h2>
+              <Link to="/assessments" className="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                View all →
+              </Link>
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {assessments.map((assessment) => (
+                <AssessmentCard key={assessment.id} assessment={assessment} />
+              ))}
+            </div>
           </div>
-          <JourneyTimeline />
+
+          {/* Practice Challenges */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">⚡ Practice Challenges</h2>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {practiceChallenges.map((challenge) => (
+                <PracticeChallengeCard key={challenge.id} challenge={challenge} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Daily Focus Card */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">✨ Daily Focus</p>
+            <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">{dailyFocus.date}</h2>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl bg-slate-100 p-3 dark:bg-slate-700">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">🎉 Today's Win</p>
+                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{dailyFocus.win}</p>
+              </div>
+              <div className="rounded-xl bg-slate-100 p-3 dark:bg-slate-700">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">🎯 Focus Area</p>
+                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{dailyFocus.intention}</p>
+              </div>
+              <div className="rounded-xl bg-slate-100 p-3 dark:bg-slate-700">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">💪 Encouragement</p>
+                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{dailyFocus.encouragement}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Journey Timeline */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <JourneyTimeline />
+          </div>
+
+          {/* Live Sessions */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">🎥 Live Sessions</h2>
+              <Link to="/community" className="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                Join →
+              </Link>
+            </div>
+            <div className="mt-6 space-y-4">
+              {upcomingSessions.map((session) => (
+                <SessionCard key={session.id} session={session} />
+              ))}
+            </div>
+          </div>
+
+          {/* Announcements */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">📢 Announcements</h3>
+            <div className="mt-4 space-y-3">
+              {announcements.map((announcement) => (
+                <AnnouncementCard key={announcement.id} announcement={announcement} />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Assessments & checkpoints</h2>
-            <Link to="/assessments" className="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-300">
-              View all
-            </Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {assessments.map((assessment) => (
-              <AssessmentCard key={assessment.id} assessment={assessment} />
-            ))}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {practiceChallenges.map((challenge) => (
-              <PracticeChallengeCard key={challenge.id} challenge={challenge} />
-            ))}
-          </div>
-        </div>
-        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Upcoming live sessions</h2>
-            <Link to="/community" className="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-300">
-              Join community
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {upcomingSessions.map((session) => (
-              <SessionCard key={session.id} session={session} />
-            ))}
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Announcements</h3>
-            {announcements.map((announcement) => (
-              <AnnouncementCard key={announcement.id} announcement={announcement} />
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

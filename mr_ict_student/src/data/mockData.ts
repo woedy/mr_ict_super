@@ -133,7 +133,7 @@ export const courses: Course[] = [
   {
     id: 'foundations-web',
     title: 'Creative Web Foundations',
-    subtitle: 'Craft colourful, accessible experiences for Ghanaian learners.',
+    subtitle: 'Craft colourful, accessible experiences for learners across Ghana and Africa.',
     summary:
       'Blend HTML, CSS, and inclusive design to build experiences tuned for West African devices, data realities, and students.',
     level: 'Beginner',
@@ -154,7 +154,7 @@ export const courses: Course[] = [
             title: 'Welcome to Creative Web Foundations',
             duration: '7:40',
             type: 'video',
-            summary: 'Meet your mentors and peek at showcase projects from Ghanaian ICT clubs.',
+            summary: 'Meet your mentors and peek at showcase projects from ICT clubs across Ghana and Africa.',
             previewImage:
               'https://images.unsplash.com/photo-1526285371233-37388c84c63c?auto=format&fit=crop&w=1200&q=80',
             interactiveCode: `<!DOCTYPE html>
@@ -247,7 +247,7 @@ export const courses: Course[] = [
   </head>
   <body>
     <article class="stage">
-      <div class="pill"><span></span> Ghana Creative Tech Studio</div>
+      <div class="pill"><span></span> Ghana & Africa Creative Tech Studio</div>
       <h1>Design a welcome hero students feel inside</h1>
       <p>Work alongside <strong>Esi</strong> as she introduces the studio culture, community rituals, and the challenge you'll remix by the end of the lesson.</p>
       <a class="cta" href="#">Launch studio tour →</a>
@@ -291,7 +291,7 @@ export const courses: Course[] = [
             title: 'Colour Palettes Inspired by Adinkra',
             duration: '11:24',
             type: 'video',
-            summary: 'Use Ghanaian symbolism to influence accessible colour systems.',
+            summary: 'Use African symbolism and Ghanaian Adinkra to influence accessible colour systems.',
           },
           {
             id: 'responsive-grid',
@@ -318,7 +318,7 @@ export const courses: Course[] = [
   },
   {
     id: 'data-storytelling',
-    title: 'Data Storytelling with Ghanaian Open Data',
+    title: 'Data Storytelling with African Open Data',
     subtitle: 'Turn raw statistics into narratives communities can trust.',
     summary:
       'Learn to analyse, visualise, and communicate public data sets about health, climate, and education using Python.',
@@ -344,7 +344,7 @@ export const courses: Course[] = [
           },
           {
             id: 'python-refresh',
-            title: 'Python Refresh with GhanaPost Datasets',
+            title: 'Python Refresh with African Postal Datasets',
             duration: '18:40',
             type: 'project',
             summary: 'Use notebooks to clean and join postal region data sets.',
@@ -370,7 +370,7 @@ export const courses: Course[] = [
   {
     id: 'immersive-media',
     title: 'Immersive Media Studio',
-    subtitle: 'Blend video, code, and storytelling to teach ICT the Scrimba way.',
+    subtitle: 'Blend video, code, and storytelling to teach ICT through interactive experiences.',
     summary:
       'Produce interactive video experiences that pair timeline-based code editing with locally resonant storytelling.',
     level: 'Advanced',
@@ -508,7 +508,7 @@ export const practiceChallenges: PracticeChallenge[] = [
     courseId: 'foundations-web',
     difficulty: 'Core',
     estimatedMinutes: 40,
-    description: 'Use CSS grid and Ghanaian inspired palettes to highlight school achievements.',
+    description: 'Use CSS grid and African-inspired palettes to highlight school achievements.',
   },
   {
     id: 'challenge-dataviz',
@@ -524,7 +524,7 @@ export const dailyFocus = {
   date: 'Friday, 31 October',
   win: 'Shipped the Adinkra-inspired dashboard layout in the Web Foundations studio. ✨',
   intention: 'Complete the accessibility QA for your community noticeboard project.',
-  encouragement: 'Remember, every inclusive detail keeps more Ghanaian learners engaged.',
+  encouragement: 'Remember, every inclusive detail keeps more learners across Ghana and Africa engaged.',
 }
 
 export const upcomingSessions = [
@@ -546,7 +546,7 @@ export const journeyTimeline = [
   {
     id: 'moment-1',
     label: 'Signed up',
-    description: 'Joined Mr ICT Student to explore interactive video coding for Ghanaian classrooms.',
+    description: 'Joined Mr ICT Student to explore interactive video coding for JHS and SHS classrooms across Ghana and Africa.',
     timestamp: '4 weeks ago',
   },
   {

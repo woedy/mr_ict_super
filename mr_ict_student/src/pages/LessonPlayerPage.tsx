@@ -6,8 +6,6 @@ import { useStudentJourney } from '../context/StudentJourneyContext'
 import { useTheme } from '../context/ThemeContext'
 import { courses, type LessonVersionMarker } from '../data/mockData'
 
-const VIDEO_ASPECT_RATIO = 16 / 9
-
 const DEFAULT_INTERACTIVE_HTML = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -133,18 +131,16 @@ export function LessonPlayerPage() {
   const [playerState, setPlayerState] = useState<'playing' | 'paused'>('paused')
   const [progress, setProgress] = useState(0)
   const [activeMarker, setActiveMarker] = useState<LessonVersionMarker | null>(null)
-  const [videoWindow, setVideoWindow] = useState(() => ({
-    width: 360,
-    height: 360 / VIDEO_ASPECT_RATIO,
-    minimized: false,
-    fullscreen: false,
-  }))
-  const [outputWindow, setOutputWindow] = useState(() => ({ width: 420, minimized: false }))
-  const [resizing, setResizing] = useState<null | 'video' | 'output'>(null)
+  const [activeFile, setActiveFile] = useState<'index.html' | 'styles.css' | 'notes'>('index.html')
+  const [videoWindow, setVideoWindow] = useState({ minimized: false, fullscreen: false, x: 24, y: 400, width: 360, height: 240 })
+  const [previewWindow, setPreviewWindow] = useState({ minimized: false, fullscreen: false, x: 800, y: 100, width: 480, height: 360 })
+  const [isDraggingVideo, setIsDraggingVideo] = useState(false)
+  const [isDraggingPreview, setIsDraggingPreview] = useState(false)
+  const [isResizingPreview, setIsResizingPreview] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [showSubtitles, setShowSubtitles] = useState(true)
 
-  const dragSnapshot = useRef({ startX: 0, startY: 0, width: 0, height: 0 })
   const seekBarRef = useRef<HTMLDivElement>(null)
-
   const totalSeconds = useMemo(() => parseDurationToSeconds(lesson?.duration), [lesson?.duration])
 
   useEffect(() => {
@@ -157,8 +153,7 @@ export function LessonPlayerPage() {
     setProgress(firstMarker?.position ?? 0)
     setPlayerState('paused')
     setIsPlaying(false)
-    setVideoWindow({ width: 360, height: 360 / VIDEO_ASPECT_RATIO, minimized: false, fullscreen: false })
-    setOutputWindow({ width: 420, minimized: false })
+    setActiveFile('index.html')
   }, [lesson?.id, versionMarkers])
 
   useEffect(() => {
@@ -194,32 +189,66 @@ export function LessonPlayerPage() {
   }, [progress, versionMarkers, activeMarker?.id])
 
   useEffect(() => {
-    if (!resizing) return
+    const { body } = document
+    const previousOverflow = body.style.overflow
+    if (isPlaying) {
+      body.style.overflow = 'hidden'
+    } else {
+      body.style.overflow = previousOverflow
+    }
+    return () => {
+      body.style.overflow = previousOverflow
+    }
+  }, [isPlaying])
 
-    const handlePointerMove = (event: PointerEvent) => {
-      if (resizing === 'video') {
-        const deltaX = event.clientX - dragSnapshot.current.startX
-        const nextWidth = Math.min(Math.max(dragSnapshot.current.width + deltaX, 240), 560)
-        const nextHeight = nextWidth / VIDEO_ASPECT_RATIO
-        setVideoWindow((previous) => ({ ...previous, width: nextWidth, height: nextHeight }))
-      } else if (resizing === 'output') {
-        const deltaX = dragSnapshot.current.startX - event.clientX
-        const nextWidth = Math.min(Math.max(dragSnapshot.current.width + deltaX, 260), 620)
-        setOutputWindow((previous) => ({ ...previous, width: nextWidth }))
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingVideo) {
+        setVideoWindow((s) => ({ ...s, x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y }))
+      }
+      if (isDraggingPreview) {
+        setPreviewWindow((s) => ({ ...s, x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y }))
+      }
+      if (isResizingPreview) {
+        setPreviewWindow((s) => ({
+          ...s,
+          width: Math.max(320, e.clientX - s.x),
+          height: Math.max(240, e.clientY - s.y),
+        }))
       }
     }
 
-    const handlePointerUp = () => {
-      setResizing(null)
+    const handleMouseUp = () => {
+      setIsDraggingVideo(false)
+      setIsDraggingPreview(false)
+      setIsResizingPreview(false)
     }
 
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
+    if (isDraggingVideo || isDraggingPreview || isResizingPreview) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
     }
-  }, [resizing])
+  }, [isDraggingVideo, isDraggingPreview, isResizingPreview, dragOffset])
+
+  const handleMarkerSelect = (marker: LessonVersionMarker) => {
+    setProgress(marker.position)
+    setActiveMarker(marker)
+    setPlayerState('paused')
+  }
+
+  const renderActiveFile = () => {
+    if (activeFile === 'index.html') return code
+    if (activeFile === 'styles.css') {
+      return `body {\n  font-family: 'Poppins', sans-serif;\n  margin: 0;\n  background: radial-gradient(circle at 12% 18%, rgba(59,130,246,0.12), transparent 60%),\n    radial-gradient(circle at 88% 12%, rgba(244,114,182,0.16), transparent 55%),\n    #0f172a;\n  color: #f8fafc;\n}\n`
+    }
+    return `## Reflection Notes\n- Pair with Mentor Esi\n- Capture your layout ideas\n- Share progress clips`
+  }
+
+  const activeLanguage = activeFile === 'styles.css' ? 'css' : activeFile === 'notes' ? 'markdown' : 'html'
 
   if (!course || !lesson) {
     return (
@@ -247,6 +276,7 @@ export function LessonPlayerPage() {
     setIsPlaying(true)
     setPlayerState('playing')
     setProgress(0)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -258,37 +288,418 @@ export function LessonPlayerPage() {
     setPlayerState('paused')
   }
 
-  const handleMarkerSelect = (marker: LessonVersionMarker) => {
-    setProgress(marker.position)
-    setActiveMarker(marker)
-    setPlayerState('paused')
-  }
+  if (isPlaying) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-50">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.32em] text-slate-600 dark:text-slate-400">
+            <Link
+              to={`/courses/${course.id}`}
+              className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-slate-600 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+            >
+              ← Back to lessons
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsPlaying(false)}
+              className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-slate-600 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+            >
+              ← Exit lesson studio
+            </button>
+            <span>{course.title}</span>
+            <span className="text-slate-400 dark:text-slate-600">/</span>
+            <span>{lesson.title}</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              Autosave synced
+            </span>
+            <button
+              type="button"
+              onClick={handleComplete}
+              className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-white shadow-lg transition hover:bg-primary-400"
+            >
+              Mark complete
+            </button>
+          </div>
+        </header>
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="hidden w-64 flex-col border-r border-slate-200 bg-slate-100 px-4 py-6 text-xs uppercase tracking-[0.3em] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 md:flex">
+            <h2 className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Files</h2>
+            <nav className="mt-4 space-y-2">
+              {[
+                { id: 'index.html' as const, label: 'index.html', icon: '' },
+                { id: 'styles.css' as const, label: 'styles.css', icon: '' },
+                { id: 'notes' as const, label: 'playback.notes', icon: '' },
+              ].map((file) => (
+                <button
+                  key={file.id}
+                  type="button"
+                  onClick={() => setActiveFile(file.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium tracking-normal transition ${
+                    activeFile === file.id ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span className="text-base opacity-60">{file.icon}</span>
+                  {file.label}
+                </button>
+              ))}
+            </nav>
+            <div className="mt-8 space-y-3 text-[11px] text-slate-600 dark:text-slate-400">
+              <div>
+                <p className="uppercase tracking-[0.34em] text-slate-500 dark:text-slate-500">Timeline</p>
+                <div className="mt-3 space-y-2">
+                  {versionMarkers.map((marker) => (
+                    <button
+                      key={marker.id}
+                      type="button"
+                      onClick={() => handleMarkerSelect(marker)}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[12px] font-medium transition ${
+                        activeMarker?.id === marker.id ? 'bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{marker.label}</span>
+                      <span className="text-slate-500 dark:text-slate-500">{marker.timecode}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+          <main className="flex flex-1 flex-col">
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-100 px-6 py-3 text-xs uppercase tracking-[0.3em] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPlayerState((state) => (state === 'playing' ? 'paused' : 'playing'))}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-200 text-base text-slate-700 transition hover:bg-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
+                >
+                  {playerState === 'playing' ? 'Ⅱ' : '▶'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProgress((value) => Math.max(value - 8, 0))}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-200 text-sm text-slate-700 transition hover:bg-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                >
+                  «
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProgress((value) => Math.min(value + 8, 100))}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-200 text-sm text-slate-700 transition hover:bg-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                >
+                  »
+                </button>
+                <span className="font-mono tracking-normal text-slate-700 dark:text-slate-300">{formatSeconds(totalSeconds * (progress / 100))}</span>
+                <span className="text-slate-500 dark:text-slate-500">/ {lesson.duration}</span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] font-semibold">
+                <span className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  {activeMarker ? `${activeMarker.label}` : 'Exploring timeline'}
+                </span>
+                <span className="rounded-full bg-slate-200 px-3 py-1 text-[10px] uppercase tracking-[0.4em] text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                  Version trail
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-1 overflow-hidden">
+              <section className="flex flex-1 flex-col">
+                <div className="flex items-center gap-4 border-b border-slate-200 bg-slate-100 px-6 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  <span className="uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">{activeFile}</span>
+                </div>
+                <div className="flex flex-1 flex-col bg-white dark:bg-slate-900">
+                  <Editor
+                    value={renderActiveFile()}
+                    onChange={(value) => {
+                      if (activeFile === 'index.html') {
+                        setCode(value ?? '')
+                      }
+                    }}
+                    language={activeLanguage}
+                    theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                    options={{
+                      fontSize: 15,
+                      minimap: { enabled: false },
+                      automaticLayout: true,
+                      readOnly: activeFile !== 'index.html',
+                      wordWrap: 'on',
+                      smoothScrolling: true,
+                      scrollBeyondLastLine: false,
+                      padding: { top: 24 },
+                    }}
+                    loading={<div className="flex h-full items-center justify-center text-sm text-slate-600 dark:text-slate-400">Launching studio…</div>}
+                    height="100%"
+                  />
+                </div>
+                <div className="border-t border-slate-200 bg-slate-100 px-6 py-3 dark:border-slate-700 dark:bg-slate-800">
+                  <div className="relative">
+                    <div
+                      ref={seekBarRef}
+                      onClick={handleSeek}
+                      className="group h-2 w-full cursor-pointer overflow-hidden rounded-full bg-white/10"
+                    >
+                      <div className="h-full bg-gradient-to-r from-amber-400 via-primary-400 to-sky-500" style={{ width: `${progress}%` }} />
+                    </div>
+                    {versionMarkers.map((marker) => (
+                      <button
+                        key={marker.id}
+                        type="button"
+                        onClick={() => handleMarkerSelect(marker)}
+                        className="absolute top-1/2 -translate-y-1/2 group/marker"
+                        style={{ left: `${marker.position}%` }}
+                        title={`${marker.label} - ${marker.timecode}`}
+                      >
+                        <div className={`h-3 w-3 -translate-x-1/2 rounded-full ${markerStyles[marker.type]} transition-transform group-hover/marker:scale-125`} />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.4em] text-white/40">
+                    <span>Lesson timeline</span>
+                    <span>{lesson.duration}</span>
+                  </div>
+                </div>
+              </section>
 
-  const handleVideoResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    dragSnapshot.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      width: videoWindow.width,
-      height: videoWindow.height,
-    }
-    setResizing('video')
-  }
+              {/* Floating Video Window */}
+              {!videoWindow.minimized && !videoWindow.fullscreen && (
+                <div
+                  className="absolute z-30 flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur"
+                  style={{
+                    left: videoWindow.x,
+                    top: videoWindow.y,
+                    width: videoWindow.width,
+                    height: videoWindow.height,
+                    cursor: isDraggingVideo ? 'grabbing' : 'default',
+                  }}
+                >
+                  <div
+                    className="flex cursor-grab items-center justify-between border-b border-white/10 px-3 py-2 text-xs text-white/70 active:cursor-grabbing"
+                    onMouseDown={(e) => {
+                      setIsDraggingVideo(true)
+                      setDragOffset({ x: e.clientX - videoWindow.x, y: e.clientY - videoWindow.y })
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-rose-400" />
+                      Mentor Esi
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setVideoWindow((s) => ({ ...s, minimized: true }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-base text-white/70 transition hover:bg-white/25"
+                        aria-label="Minimize video"
+                      >
+                        –
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoWindow((s) => ({ ...s, width: s.width === 360 ? 480 : 360, height: s.height === 240 ? 320 : 240 }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs text-white/70 transition hover:bg-white/25"
+                        aria-label="Resize video"
+                      >
+                        ⤡
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoWindow((s) => ({ ...s, fullscreen: true }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs text-white/70 transition hover:bg-white/25"
+                        aria-label="Fullscreen video"
+                      >
+                        ⤢
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative flex-1 overflow-hidden bg-slate-950">
+                    {previewImage && <img src={previewImage} alt="Mentor feed" className="h-full w-full object-cover" />}
+                    <div className="absolute inset-0 bg-slate-950/25" />
+                    <button className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/30">
+                      ▶
+                    </button>
+                  </div>
+                </div>
+              )}
 
-  const handleOutputResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    dragSnapshot.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      width: outputWindow.width,
-      height: 0,
-    }
-    setResizing('output')
-  }
+              {videoWindow.minimized && (
+                <button
+                  type="button"
+                  onClick={() => setVideoWindow((s) => ({ ...s, minimized: false }))}
+                  className="absolute bottom-6 left-6 z-30 flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/90 px-4 py-2 text-xs font-medium text-white/80 shadow-xl backdrop-blur transition hover:bg-slate-900/95"
+                >
+                  ▶ Mentor feed
+                </button>
+              )}
 
-  const currentSeconds = Math.round((totalSeconds * progress) / 100)
+              {/* Fullscreen Video Window */}
+              {videoWindow.fullscreen && (
+                <div className="absolute inset-0 z-40 flex flex-col bg-slate-950/98 p-8">
+                  <div className="flex items-center justify-between rounded-t-3xl border-b border-white/10 bg-slate-900/60 px-6 py-4 text-sm text-white/70 backdrop-blur">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-400" />
+                      Live with Mentor Esi
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVideoWindow((s) => ({ ...s, fullscreen: false }))}
+                      className="rounded-full border border-white/10 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20"
+                    >
+                      Exit fullscreen
+                    </button>
+                  </div>
+                  <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-b-3xl">
+                    {previewImage && <img src={previewImage} alt="Expanded mentor feed" className="h-full w-full rounded-b-3xl object-cover" />}
+                    <div className="absolute inset-0 rounded-b-3xl bg-slate-950/50" />
+                    <button className="absolute flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
+                      Pause mentor feed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoWindow((s) => ({ ...s, fullscreen: false, minimized: true }))}
+                      className="absolute bottom-8 left-8 rounded-full border border-white/10 bg-slate-900/90 px-4 py-2 text-xs font-medium text-white/80 shadow-xl backdrop-blur transition hover:bg-slate-900/95"
+                    >
+                      Minimize
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Floating Preview Window */}
+              {!previewWindow.minimized && !previewWindow.fullscreen && (
+                <div
+                  className="absolute z-20 flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/95 text-slate-800 shadow-2xl backdrop-blur dark:bg-slate-900/95 dark:text-white/80"
+                  style={{
+                    left: previewWindow.x,
+                    top: previewWindow.y,
+                    width: previewWindow.width,
+                    height: previewWindow.height,
+                    cursor: isDraggingPreview ? 'grabbing' : 'default',
+                  }}
+                >
+                  <div
+                    className="flex cursor-grab items-center justify-between border-b border-slate-200/60 px-3 py-2 text-xs uppercase tracking-[0.3em] text-slate-500 active:cursor-grabbing dark:border-white/10 dark:text-white/60"
+                    onMouseDown={(e) => {
+                      setIsDraggingPreview(true)
+                      setDragOffset({ x: e.clientX - previewWindow.x, y: e.clientY - previewWindow.y })
+                    }}
+                  >
+                    <span>Browser preview</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewWindow((s) => ({ ...s, width: s.width === 480 ? 640 : 480, height: s.height === 360 ? 480 : 360 }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-[10px] font-semibold text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                        aria-label="Resize preview"
+                      >
+                        ⟷
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewWindow((s) => ({ ...s, fullscreen: true }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-xs text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                        aria-label="Fullscreen preview"
+                      >
+                        ⤢
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewWindow((s) => ({ ...s, minimized: true }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-base text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                        aria-label="Minimize preview"
+                      >
+                        –
+                      </button>
+                    </div>
+                  </div>
+                  <iframe title="Live HTML preview" className="h-full flex-1 border-0 bg-white dark:bg-slate-950" srcDoc={code} sandbox="allow-same-origin" />
+                  <div
+                    className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      setIsResizingPreview(true)
+                    }}
+                  >
+                    <div className="absolute bottom-1 right-1 h-2 w-2 border-b-2 border-r-2 border-slate-400 dark:border-white/40" />
+                  </div>
+                </div>
+              )}
+
+              {/* Fullscreen Preview Window */}
+              {previewWindow.fullscreen && (
+                <div className="absolute inset-0 z-40 flex flex-col bg-white p-8 dark:bg-slate-950">
+                  <div className="flex items-center justify-between rounded-t-3xl border-b border-slate-200 bg-white px-6 py-3 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-900/60 dark:text-white/70">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                        aria-label="Refresh"
+                      >
+                        ↻
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewWindow((s) => ({ ...s, fullscreen: false }))}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                        aria-label="Back"
+                      >
+                        ←
+                      </button>
+                      <div className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-mono text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+                        localhost:3000/preview
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewWindow((s) => ({ ...s, fullscreen: false }))}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:text-white/70"
+                    >
+                      Exit fullscreen
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-hidden rounded-b-3xl border border-t-0 border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950">
+                    <iframe title="Fullscreen HTML preview" className="h-full w-full border-0 bg-white dark:bg-slate-950" srcDoc={code} sandbox="allow-same-origin" />
+                  </div>
+                </div>
+              )}
+
+              {previewWindow.minimized && (
+                <button
+                  type="button"
+                  onClick={() => setPreviewWindow((s) => ({ ...s, minimized: false }))}
+                  className="absolute bottom-6 right-6 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-white/90 px-4 py-2 text-xs font-semibold text-slate-700 shadow-xl backdrop-blur transition hover:bg-white dark:bg-slate-900/90 dark:text-white/80"
+                >
+                  ⧉ Open preview
+                </button>
+              )}
+
+              {/* Subtitle Component */}
+              {showSubtitles && activeMarker && (
+                <div className="absolute bottom-20 left-1/2 z-10 flex max-w-3xl -translate-x-1/2 flex-col items-center gap-2">
+                  <div className="rounded-2xl border border-white/10 bg-slate-950/90 px-6 py-3 text-center shadow-2xl backdrop-blur">
+                    <p className="text-sm font-medium leading-relaxed text-white/90">
+                      {activeMarker.label === 'Layout inspiration' && 'Start by exploring the layout structure—notice how the hero section uses flexbox to center content.'}
+                      {activeMarker.label === 'HTML scaffold' && 'Build the semantic HTML structure with header, main, and footer elements for accessibility.'}
+                      {activeMarker.label === 'Palette swap' && 'Experiment with African-inspired colors—try warm oranges and deep blues to reflect local culture.'}
+                      {activeMarker.label === 'Checkpoint save' && 'Great progress! Your layout is taking shape. Save this version before moving to advanced styling.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSubtitles(false)}
+                    className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/70 backdrop-blur transition hover:bg-white/20"
+                  >
+                    Hide subtitles
+                  </button>
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -388,7 +799,7 @@ export function LessonPlayerPage() {
                         >
                           »
                         </button>
-                        <span className="font-mono text-xs text-white/70">{formatSeconds(currentSeconds)}</span>
+                        <span className="font-mono text-xs text-white/70">{formatSeconds(totalSeconds * (progress / 100))}</span>
                         <span className="text-white/40">/</span>
                         <span className="font-mono text-xs text-white/50">{lesson.duration}</span>
                       </div>
@@ -451,140 +862,6 @@ export function LessonPlayerPage() {
                     loading={<div className="flex h-full items-center justify-center text-sm text-white/60">Loading editor…</div>}
                     height="100%"
                   />
-
-                  {!videoWindow.minimized && !videoWindow.fullscreen && (
-                    <div
-                      className="absolute bottom-6 left-6 z-20 flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-2xl backdrop-blur"
-                      style={{ width: videoWindow.width, height: videoWindow.height }}
-                    >
-                      <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs text-white/70">
-                        <span className="flex items-center gap-2">
-                          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-rose-400" />
-                          Studio Cam
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setVideoWindow((state) => ({ ...state, minimized: true }))}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-base text-white/70 transition hover:bg-white/25"
-                            aria-label="Minimise video"
-                          >
-                            –
-                          </button>
-                          <button
-                            type="button"
-                            onPointerDown={handleVideoResizeStart}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs text-white/70 transition hover:bg-white/25"
-                            aria-label="Resize video"
-                          >
-                            ⤡
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setVideoWindow((state) => ({ ...state, fullscreen: true }))}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/10 text-xs text-white/70 transition hover:bg-white/25"
-                            aria-label="Open video full screen"
-                          >
-                            ⤢
-                          </button>
-                        </div>
-                      </div>
-                      <div className="relative flex-1 overflow-hidden bg-slate-950">
-                        {previewImage && (
-                          <img src={previewImage} alt="Mentor feed" className="h-full w-full object-cover" />
-                        )}
-                        <div className="absolute inset-0 bg-slate-950/25" />
-                        <button className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/30">
-                          ▶
-                        </button>
-                        <div className="absolute bottom-2 right-3 rounded-full bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
-                          Twi captions on
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {videoWindow.minimized && !videoWindow.fullscreen && (
-                    <button
-                      type="button"
-                      onClick={() => setVideoWindow((state) => ({ ...state, minimized: false }))}
-                      className="absolute bottom-6 left-6 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-4 py-2 text-xs font-medium text-white/80 shadow-xl backdrop-blur transition hover:bg-slate-900/90"
-                    >
-                      ▶ Studio feed
-                    </button>
-                  )}
-
-                  {videoWindow.fullscreen && (
-                    <div className="absolute inset-0 z-30 flex flex-col bg-slate-950/95">
-                      <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 text-sm text-white/70">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-400" />
-                          Live with Mentor Esi
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setVideoWindow((state) => ({ ...state, fullscreen: false }))}
-                          className="rounded-full border border-white/10 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20"
-                        >
-                          Exit full screen
-                        </button>
-                      </div>
-                      <div className="relative flex flex-1 items-center justify-center overflow-hidden">
-                        {previewImage && (
-                          <img src={previewImage} alt="Expanded mentor feed" className="h-full w-full object-cover" />
-                        )}
-                        <div className="absolute inset-0 bg-slate-950/50" />
-                        <button className="absolute bottom-16 flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
-                          Pause mentor feed
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!outputWindow.minimized && (
-                    <div
-                      className="absolute top-6 right-6 z-10 flex h-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/95 text-slate-800 shadow-2xl backdrop-blur dark:bg-slate-900/95 dark:text-white/80"
-                      style={{ width: outputWindow.width }}
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-200/60 px-3 py-2 text-xs uppercase tracking-[0.3em] text-slate-500 dark:border-white/10 dark:text-white/60">
-                        <span>Browser preview</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onPointerDown={handleOutputResizeStart}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-[10px] font-semibold text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white/70"
-                            aria-label="Resize preview"
-                          >
-                            ⟷
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setOutputWindow((state) => ({ ...state, minimized: true }))}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white/70 text-base text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white/70"
-                            aria-label="Minimise preview"
-                          >
-                            –
-                          </button>
-                        </div>
-                      </div>
-                      <iframe
-                        title="Live HTML preview"
-                        className="h-full flex-1 border-0 bg-white dark:bg-slate-950"
-                        srcDoc={code}
-                        sandbox="allow-same-origin"
-                      />
-                    </div>
-                  )}
-
-                  {outputWindow.minimized && (
-                    <button
-                      type="button"
-                      onClick={() => setOutputWindow((state) => ({ ...state, minimized: false }))}
-                      className="absolute bottom-6 right-6 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-white/85 px-4 py-2 text-xs font-semibold text-slate-700 shadow-xl backdrop-blur transition hover:bg-white dark:bg-slate-900/80 dark:text-white/80"
-                    >
-                      ⧉ Open preview
-                    </button>
-                  )}
                 </div>
               </div>
             )}

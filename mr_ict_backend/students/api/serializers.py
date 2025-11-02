@@ -26,6 +26,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         child=serializers.CharField(), required=False
     )
     interest_tags = serializers.ListField(child=serializers.CharField(), required=False)
+    badge_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
@@ -42,6 +43,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "allow_offline_downloads",
             "has_completed_onboarding",
             "onboarding_completed_at",
+            "badge_count",
         ]
         read_only_fields = [
             "student_id",
@@ -62,6 +64,10 @@ class StudentProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(photo.url)
             return photo.url
         return None
+
+    def get_badge_count(self, obj: Student) -> int:
+        """Return the total number of badges earned by the student."""
+        return obj.badges.count()
 
     def update(self, instance: Student, validated_data: Dict[str, Any]) -> Student:
         dirty_fields: set[str] = set()

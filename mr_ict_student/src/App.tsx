@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth, RequireProfileComplete } from './components/RouteGuards'
 import { ShellLayout } from './layouts/ShellLayout'
+import ApiTestPage from './pages/ApiTestPage'
 import { AssessmentsPage } from './pages/AssessmentsPage'
 import { CatalogPage } from './pages/CatalogPage'
 import { CommunityPage } from './pages/CommunityPage'
@@ -23,6 +24,7 @@ export function App() {
       <Route path="/signin" element={<SignInPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/api-test" element={<ApiTestPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<RequireProfileComplete />}>

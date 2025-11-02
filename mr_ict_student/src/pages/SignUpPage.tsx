@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStudentJourney } from '../context/StudentJourneyContext'
+import { schoolsApi } from '../lib/api'
 
 const interestOptions = [
   'Web storytelling',
@@ -11,13 +12,39 @@ const interestOptions = [
 ]
 
 export function SignUpPage() {
-  const { signUp, isAuthenticated, profileComplete } = useStudentJourney()
+  const { signUp, isAuthenticated, profileComplete, loading, error: contextError, clearError } = useStudentJourney()
   const navigate = useNavigate()
-  const [fullName, setFullName] = useState('Ama Serwaa')
-  const [email, setEmail] = useState('ama@example.com')
-  const [password, setPassword] = useState('createICT!')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [interest, setInterest] = useState(interestOptions[0])
-  const [error, setError] = useState<string | null>(null)
+  const [schoolId, setSchoolId] = useState('')
+  const [schools, setSchools] = useState<any[]>([])
+  const [loadingSchools, setLoadingSchools] = useState(true)
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  // Load schools on mount
+  useEffect(() => {
+    const loadSchools = async () => {
+      try {
+        setLoadingSchools(true)
+        const response = await schoolsApi.getSchools()
+        const schoolsData = response.data?.schools || []
+        setSchools(schoolsData)
+        // Set first school as default if available
+        if (schoolsData.length > 0) {
+          setSchoolId(schoolsData[0].school_id)
+        }
+      } catch (error) {
+        console.error('Failed to load schools:', error)
+        // Use default school ID as fallback
+        setSchoolId('SCH-0JP0Z5GR-OL')
+      } finally {
+        setLoadingSchools(false)
+      }
+    }
+    loadSchools()
+  }, [])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -25,15 +52,59 @@ export function SignUpPage() {
     }
   }, [isAuthenticated, profileComplete, navigate])
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearError()
+    }
+  }, [clearError])
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!fullName || !email || !password) {
-      setError('Fill in your details to join the studio.')
+    setLocalError(null)
+    clearError()
+
+    if (!fullName || !email || !password || !schoolId) {
+      setLocalError('Fill in all your details to join the studio.')
       return
     }
-    setError(null)
-    signUp({ fullName, email, password, interest })
+
+    // Validate password strength (must match backend requirements)
+    if (password.length < 8) {
+      setLocalError('Password must be at least 8 characters long.')
+      return
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+      setLocalError('Password must include at least one uppercase letter.')
+      return
+    }
+    
+    if (!/[a-z]/.test(password)) {
+      setLocalError('Password must include at least one lowercase letter.')
+      return
+    }
+    
+    if (!/[0-9]/.test(password)) {
+      setLocalError('Password must include at least one number.')
+      return
+    }
+    
+    if (!/[-!@#$%^&*_()+=\/.,<>?"~`£{}|:;]/.test(password)) {
+      setLocalError('Password must include at least one special character (!@#$%^&*).')
+      return
+    }
+
+    try {
+      await signUp({ fullName, email, password, interest, schoolId })
+      // Navigation handled by useEffect above
+    } catch (error) {
+      // Error is handled in context and displayed via contextError
+      console.error('Sign up error:', error)
+    }
   }
+
+  const displayError = localError || contextError
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 py-12 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -48,7 +119,7 @@ export function SignUpPage() {
                 Reimagine ICT learning for your community.
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                Create an account to access immersive video coding lessons, Ghana-inspired projects, and a welcoming student
+                Create an account to access immersive video coding lessons, African-inspired projects, and a welcoming student
                 community ready to collaborate.
               </p>
               <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
@@ -96,6 +167,30 @@ export function SignUpPage() {
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                     placeholder="Create a secure passphrase"
                   />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Must be 8+ characters with uppercase, lowercase, number, and special character (!@#$%^&*)
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Select your school</label>
+                  <select
+                    value={schoolId}
+                    onChange={(event) => setSchoolId(event.target.value)}
+                    disabled={loadingSchools}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 disabled:opacity-50"
+                  >
+                    {loadingSchools ? (
+                      <option>Loading schools...</option>
+                    ) : schools.length > 0 ? (
+                      schools.map((school) => (
+                        <option key={school.school_id} value={school.school_id}>
+                          {school.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="SCH-0JP0Z5GR-OL">Mr ICT Academy (Default)</option>
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Pick your focus area</label>
@@ -109,12 +204,13 @@ export function SignUpPage() {
                     ))}
                   </select>
                 </div>
-                {error ? <p className="text-sm text-accent-500">{error}</p> : null}
+                {displayError ? <p className="text-sm text-red-600 dark:text-red-400">{displayError}</p> : null}
                 <button
                   type="submit"
-                  className="w-full rounded-full bg-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-400"
+                  disabled={loading}
+                  className="w-full rounded-full bg-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Join Mr ICT Student
+                  {loading ? 'Creating account...' : 'Join Mr ICT Student'}
                 </button>
               </form>
               <p className="mt-6 text-sm text-slate-600 dark:text-slate-300">

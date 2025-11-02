@@ -5,7 +5,7 @@ import { useStudentJourney } from '../context/StudentJourneyContext'
 export function ProfilePage() {
   const { student } = useStudentJourney()
   const [bio, setBio] = useState(
-    'Interactive coding student passionate about inclusive design and telling technology stories for Ghanaian classrooms.',
+    'JHS/SHS student passionate about inclusive design and telling technology stories for classrooms across Ghana and Africa.',
   )
 
   if (!student) {

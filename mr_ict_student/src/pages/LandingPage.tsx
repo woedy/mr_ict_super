@@ -4,9 +4,9 @@ import { ThemeToggle } from '../components/ThemeToggle'
 
 const features = [
   {
-    title: 'Interactive video lessons crafted in Ghana',
+    title: 'Interactive video lessons crafted across Ghana and Africa',
     description:
-      'Follow mentors from Accra to Tamale as they pair code walkthroughs with storytelling and community projects.',
+      'Follow mentors from Accra to Tamale and beyond as they pair code walkthroughs with storytelling and community projects.',
   },
   {
     title: 'Offline friendly student journeys',
@@ -68,14 +68,14 @@ export function LandingPage() {
           <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-16 lg:flex-row lg:items-center">
             <div className="w-full space-y-6 lg:w-1/2">
               <span className="inline-flex items-center rounded-full bg-primary-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-200">
-                Ghanaian-made interactive coding studio
+                Made in Ghana for Africa · Interactive coding studio
               </span>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-5xl">
                 Empower ICT students with immersive coding stories.
               </h1>
               <p className="text-lg text-slate-600 dark:text-slate-300">
-                Experience Scrimba-style video walkthroughs, local mentors, and collaborative sandboxes designed for SHS labs,
-                university cohorts, and community learning hubs across Ghana.
+                Experience interactive video walkthroughs, local mentors, and collaborative sandboxes designed for JHS and SHS labs,
+                university cohorts, and community learning hubs across Ghana and Africa.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -108,7 +108,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <dt className="font-semibold text-slate-900 dark:text-slate-100">∞</dt>
-                  <dd>Inspiration from Ghana</dd>
+                  <dd>Inspiration from Africa</dd>
                 </div>
               </dl>
             </div>
@@ -160,7 +160,7 @@ export function LandingPage() {
         <section className="mx-auto max-w-6xl px-6 py-16">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Designed for Ghanaian classrooms.</h2>
+              <h2 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Designed for JHS and SHS classrooms.</h2>
               <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
                 Mr ICT Student blends design thinking, cultural inspiration, and empathy for bandwidth realities so every learner
                 can join the story.
@@ -233,7 +233,7 @@ export function LandingPage() {
         </section>
       </main>
       <footer className="border-t border-slate-200 bg-white/70 py-6 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/90 dark:text-slate-400">
-        Crafted in Ghana · Celebrating digital literacy for every student
+        Made in Ghana for Africa · Celebrating digital literacy for JHS and SHS students
       </footer>
     </div>
   )

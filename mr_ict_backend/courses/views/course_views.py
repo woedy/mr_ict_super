@@ -69,7 +69,7 @@ def get_all_courses_view(request):
     # Get query parameters
     search_query = request.query_params.get('search', '')
     page_number = request.query_params.get('page', 1)
-    page_size = 10
+    page_size = int(request.query_params.get('page_size', 20))  # Default to 20, allow customization
 
     # Start with all courses, excluding archived ones
     all_courses = Course.objects.filter(is_archived=False)

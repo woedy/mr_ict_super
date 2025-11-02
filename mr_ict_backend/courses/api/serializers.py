@@ -137,6 +137,7 @@ class ModuleSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     modules = ModuleSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    enrollment_stats = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -159,6 +160,7 @@ class CourseSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "modules",
+            "enrollment_stats",
         ]
         read_only_fields = [
             "id",
@@ -171,6 +173,21 @@ class CourseSerializer(serializers.ModelSerializer):
             "updated_at",
             "modules",
         ]
+
+    def get_enrollment_stats(self, obj: Course) -> dict[str, Any]:
+        """Return enrollment statistics for the course."""
+        from django.db.models import Avg, Count
+        from students.models import StudentCourse
+        
+        stats = StudentCourse.objects.filter(course=obj).aggregate(
+            total_enrollments=Count('id'),
+            avg_progress=Avg('progress_percent')
+        )
+        
+        return {
+            "total_enrollments": stats['total_enrollments'] or 0,
+            "avg_progress_percent": round(stats['avg_progress'] or 0.0, 2),
+        }
 
     def validate_tags(self, value: Any) -> list[str]:
         if isinstance(value, list):

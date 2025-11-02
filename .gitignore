@@ -1,0 +1,95 @@
+# Global ignores
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+*.orig
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyc.*
+*.pyo
+.Python
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+*.egg
+*.mo
+*.pot
+db.sqlite3
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+coverage.xml
+.coverage*
+htmlcov/
+build/
+staticfiles/
+media/
+
+# JavaScript / TypeScript
+node_modules/
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+dist/
+dist-ssr/
+.parcel-cache/
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+.cache/
+coverage/
+*.tsbuildinfo
+
+# Vite / React outputs
+.vite/
+*.local
+
+# Environment & credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# IDE & tooling
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.fleet/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.vcxproj*
+*.dbmdl
+
+# Docker & deployment
+.docker/
+.docker-compose.override.yml
+docker-compose.override.yml
+
+# Misc project folders
+.kiro/
+.SuperTest/
+mr_ict_admin/node_modules/
+mr_ict_frontend/node_modules/
+mr_ict_student/node_modules/
+mr_ict_admin/dist/
+mr_ict_frontend/dist/
+mr_ict_student/dist/
+
+# OS generated files
+ehthumbs.db
+Icon?

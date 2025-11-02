@@ -1,0 +1,45 @@
+import forms from '@tailwindcss/forms'
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f2f9f7',
+          100: '#d4efe7',
+          200: '#a8dece',
+          300: '#75c6b1',
+          400: '#43aa93',
+          500: '#1f8f7a',
+          600: '#137262',
+          700: '#0f5a50',
+          800: '#0d4840',
+          900: '#0b3b34',
+        },
+        accent: {
+          50: '#fff7ed',
+          100: '#ffebc6',
+          200: '#ffd08a',
+          300: '#ffb151',
+          400: '#ff9031',
+          500: '#f46d13',
+          600: '#d64e0c',
+          700: '#b1390d',
+          800: '#8b2f10',
+          900: '#6f2811',
+        },
+      },
+      fontFamily: {
+        display: ['"DM Sans"', 'ui-sans-serif', 'system-ui'],
+        body: ['"Inter"', 'ui-sans-serif', 'system-ui'],
+      },
+    },
+  },
+  plugins: [forms],
+}

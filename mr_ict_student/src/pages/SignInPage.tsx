@@ -5,12 +5,12 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { useStudentJourney } from '../context/StudentJourneyContext'
 
 export function SignInPage() {
-  const { signIn, isAuthenticated, profileComplete } = useStudentJourney()
+  const { signIn, isAuthenticated, profileComplete, loading, error: contextError, clearError } = useStudentJourney()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('kwame@example.com')
-  const [password, setPassword] = useState('mrictdemo')
-  const [error, setError] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [localError, setLocalError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -20,15 +20,33 @@ export function SignInPage() {
     }
   }, [isAuthenticated, profileComplete, navigate, location.state])
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearError()
+    }
+  }, [clearError])
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setLocalError(null)
+    clearError()
+
     if (!email || !password) {
-      setError('Enter your email and password to continue.')
+      setLocalError('Enter your email and password to continue.')
       return
     }
-    setError(null)
-    signIn({ email, password })
+
+    try {
+      await signIn({ email, password })
+      // Navigation handled by useEffect above
+    } catch (error) {
+      // Error is handled in context and displayed via contextError
+      console.error('Sign in error:', error)
+    }
   }
+
+  const displayError = localError || contextError
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -41,8 +59,8 @@ export function SignInPage() {
                 Welcome back to the studio. Your community is waiting.
               </h1>
               <p className="text-sm text-white/70">
-                Continue your Ghanaian-made interactive lessons, contribute to community resources, and gather XP for your ICT
-                club.
+                Continue your interactive lessons, contribute to community resources, and gather XP for your ICT
+                club across Ghana and Africa.
               </p>
               <div className="space-y-4 text-sm text-white/80">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -93,12 +111,13 @@ export function SignInPage() {
                 </Link>
               </div>
             </div>
-            {error ? <p className="text-sm text-accent-500">{error}</p> : null}
+            {displayError ? <p className="text-sm text-red-600 dark:text-red-400">{displayError}</p> : null}
             <button
               type="submit"
-              className="w-full rounded-full bg-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-400"
+              disabled={loading}
+              className="w-full rounded-full bg-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign in and continue
+              {loading ? 'Signing in...' : 'Sign in and continue'}
             </button>
           </form>
           <p className="mt-6 text-sm text-slate-600 dark:text-slate-300">

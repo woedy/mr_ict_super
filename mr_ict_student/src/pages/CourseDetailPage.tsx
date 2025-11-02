@@ -1,15 +1,59 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { courses } from '../data/mockData'
+import { coursesApi } from '../lib/api'
+import { adaptCourse } from '../lib/adapters'
+import type { Course } from '../data/mockData'
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>()
-  const course = useMemo(() => courses.find((item) => item.id === courseId), [courseId])
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!course) {
+  useEffect(() => {
+    if (courseId) {
+      loadCourse()
+    }
+  }, [courseId])
+
+  const loadCourse = async () => {
+    if (!courseId) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await coursesApi.getCourseDetail(courseId)
+      setCourse(adaptCourse(response.data))
+    } catch (err) {
+      console.error('Failed to load course:', err)
+      setError('Failed to load course details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-10">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="h-60 w-full bg-slate-200 dark:bg-slate-800" />
+          <div className="grid gap-6 px-8 py-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-4">
+              <div className="h-10 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-6 w-full rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-4 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
+            </div>
+            <div className="h-64 rounded-3xl bg-slate-200 dark:bg-slate-800" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !course) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
-        Course not found. Return to the <Link to="/catalog" className="font-semibold text-primary-600">catalog</Link> to explore other learning paths.
+        {error || 'Course not found.'} Return to the <Link to="/catalog" className="font-semibold text-primary-600">catalog</Link> to explore other learning paths.
       </div>
     )
   }

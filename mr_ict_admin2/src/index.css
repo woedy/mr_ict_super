@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-bg-primary: 248 250 252;
+  --color-bg-secondary: 241 245 249;
+  --color-text-primary: 15 23 42;
+  --color-text-secondary: 71 85 105;
+  --color-border: 226 232 240;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-bg-primary: 15 23 42;
+  --color-bg-secondary: 30 41 59;
+  --color-text-primary: 248 250 252;
+  --color-text-secondary: 203 213 225;
+  --color-border: 51 65 85;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased font-body;
+  font-feature-settings: 'cv11', 'ss01';
+  font-optical-sizing: auto;
+}
+
+.dark body {
+  @apply bg-slate-900 text-slate-50;
+}
+
+a {
+  @apply text-primary-600 hover:text-primary-500 font-medium transition-colors;
+}
+
+.dark a {
+  @apply text-primary-400 hover:text-primary-300;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-500/60 rounded-full;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-200/70 dark:bg-slate-800;
+}
