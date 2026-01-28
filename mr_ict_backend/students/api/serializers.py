@@ -44,6 +44,12 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "has_completed_onboarding",
             "onboarding_completed_at",
             "badge_count",
+            # New fields
+            "streak_days",
+            "last_activity_date",
+            "availability",
+            "learning_goals",
+            "preferred_mode",
         ]
         read_only_fields = [
             "student_id",
@@ -54,6 +60,8 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "school_name",
             "has_completed_onboarding",
             "onboarding_completed_at",
+            "streak_days",
+            "last_activity_date",
         ]
 
     def get_photo(self, obj: Student) -> Optional[str]:
@@ -72,7 +80,8 @@ class StudentProfileSerializer(serializers.ModelSerializer):
     def update(self, instance: Student, validated_data: Dict[str, Any]) -> Student:
         dirty_fields: set[str] = set()
 
-        for field in ["preferred_language", "allow_offline_downloads"]:
+        # Simple field updates
+        for field in ["preferred_language", "allow_offline_downloads", "availability", "learning_goals", "preferred_mode"]:
             if field in validated_data:
                 setattr(instance, field, validated_data[field])
                 dirty_fields.add(field)

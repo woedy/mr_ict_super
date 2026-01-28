@@ -84,14 +84,23 @@ class PublishableModel(models.Model):
 
 
 
+TRACK_CHOICES = (
+    ('Web', 'Web Development'),
+    ('Data', 'Data Science'),
+    ('Design', 'Design'),
+)
+
 class Course(PublishableModel):
     course_id = models.CharField(max_length=1000, unique=True, null=True, blank=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     title = models.CharField(max_length=1000, unique=True)
+    subtitle = models.CharField(max_length=500, blank=True)  # New field
     summary = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
+    spotlight = models.TextField(blank=True)  # New field
     image = models.ImageField(upload_to="course_images/", blank=True, null=True)
     tags = models.JSONField(default=list, blank=True)
+    track = models.CharField(max_length=20, choices=TRACK_CHOICES, default='Web', blank=True)  # New field
     level = models.CharField(max_length=50, blank=True)
     estimated_duration_minutes = models.PositiveIntegerField(default=0)
 
@@ -143,6 +152,29 @@ def pre_save_course_id_receiver(sender, instance, *args, **kwargs):
 pre_save.connect(pre_save_course_id_receiver, sender=Course)
 
 
+class CourseInstructor(models.Model):
+    """Many-to-many through model for Course instructors with additional fields."""
+    course = models.ForeignKey(Course, related_name='course_instructors', on_delete=models.CASCADE)
+    instructor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='instructor_courses',
+        on_delete=models.CASCADE
+    )
+    order = models.PositiveIntegerField(default=0, help_text="Display order of instructor")
+    role = models.CharField(max_length=100, blank=True, help_text="e.g., Lead Instructor, Teaching Assistant")
+    bio = models.TextField(blank=True, help_text="Instructor bio for this course")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ['course', 'instructor']
+    
+    def __str__(self):
+        return f"{self.instructor.get_full_name()} - {self.course.title}"
+
+
 
 
 class Module(PublishableModel):
@@ -179,6 +211,14 @@ class Module(PublishableModel):
 
 
 
+LESSON_TYPE_CHOICES = (
+    ('video', 'Video Lesson'),
+    ('interactive', 'Interactive Coding'),
+    ('reading', 'Reading Material'),
+    ('quiz', 'Quiz'),
+    ('project', 'Project'),
+)
+
 class Lesson(PublishableModel):
     lesson_id = models.CharField(max_length=1000, unique=True)
     course = models.ForeignKey(Course, related_name="lessons", on_delete=models.CASCADE, null=True, blank=True)
@@ -187,6 +227,7 @@ class Lesson(PublishableModel):
     description = models.TextField(null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     video_url = models.URLField(null=True, blank=True)
+    lesson_type = models.CharField(max_length=20, choices=LESSON_TYPE_CHOICES, default='video', blank=True)  # New field
     order = models.IntegerField()
 
     
@@ -220,6 +261,40 @@ def pre_save_lesson_id_receiver(sender, instance, *args, **kwargs):
         instance.lesson_id = unique_lesson_id_generator(instance)
 
 pre_save.connect(pre_save_lesson_id_receiver, sender=Lesson)
+
+
+MARKER_TYPE_CHOICES = (
+    ('chapter', 'Chapter Marker'),
+    ('note', 'Note'),
+    ('highlight', 'Highlight'),
+    ('bookmark', 'Bookmark'),
+)
+
+class LessonVersionMarker(models.Model):
+    """Markers for specific points in a lesson video (e.g., chapters, notes)."""
+    lesson = models.ForeignKey(Lesson, related_name='version_markers', on_delete=models.CASCADE)
+    marker_id = models.CharField(max_length=100, unique=True, blank=True)
+    label = models.CharField(max_length=255, help_text="Label for this marker")
+    timecode = models.FloatField(help_text="Time in seconds from start of video")
+    position = models.PositiveIntegerField(default=0, help_text="Display order")
+    marker_type = models.CharField(max_length=20, choices=MARKER_TYPE_CHOICES, default='chapter')
+    description = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['position', 'timecode']
+        unique_together = ['lesson', 'timecode']
+    
+    def __str__(self):
+        return f"{self.lesson.title} - {self.label} @ {self.timecode}s"
+    
+    def save(self, *args, **kwargs):
+        if not self.marker_id:
+            import uuid
+            self.marker_id = f"MKR-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
 
 
 

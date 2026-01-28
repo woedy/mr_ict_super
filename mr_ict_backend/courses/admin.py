@@ -5,11 +5,13 @@ from courses.models import (
     CodingChallenge,
     ContentAuditLog,
     Course,
+    CourseInstructor,
     Lesson,
     LessonAssignment,
     LessonCodeSnippet,
     LessonInsertVideo,
     LessonIntroVideo,
+    LessonVersionMarker,
     LessonVideo,
     Module,
     Motivation,
@@ -17,7 +19,9 @@ from courses.models import (
 
 # Register your models here.
 admin.site.register(Course)
+admin.site.register(CourseInstructor)
 admin.site.register(Lesson)
+admin.site.register(LessonVersionMarker)
 admin.site.register(LessonIntroVideo)
 admin.site.register(LessonInsertVideo)
 admin.site.register(LessonVideo)

@@ -11,6 +11,12 @@ from schools.models import School
 
 User = get_user_model()
 
+PREFERRED_MODE_CHOICES = (
+    ('online', 'Online'),
+    ('offline', 'Offline'),
+    ('hybrid', 'Hybrid'),
+)
+
 class Student(models.Model):
     student_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
@@ -22,6 +28,14 @@ class Student(models.Model):
     progress = models.IntegerField(default=0)
     challenges_solved = models.IntegerField(default=0)
     days_active = models.IntegerField(default=0)
+    
+    # New fields for Week 2
+    streak_days = models.IntegerField(default=0)
+    last_activity_date = models.DateField(null=True, blank=True)
+    availability = models.CharField(max_length=100, blank=True)
+    learning_goals = models.TextField(blank=True)
+    preferred_mode = models.CharField(max_length=20, choices=PREFERRED_MODE_CHOICES, default='hybrid', blank=True)
+    
     preferred_language = models.CharField(max_length=32, blank=True)
     accessibility_preferences = models.JSONField(default=list, blank=True)
     interest_tags = models.JSONField(default=list, blank=True)

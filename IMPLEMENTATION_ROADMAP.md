@@ -95,51 +95,53 @@ This roadmap provides a practical, week-by-week plan to align `mr_ict_student` a
 ### Backend Tasks
 
 #### 1. Student Model Enhancements
-- [ ] Add `streak_days` field (IntegerField, default=0)
-- [ ] Add `last_activity_date` field (DateField, null=True)
-- [ ] Add `availability` field (CharField, max_length=100)
-- [ ] Add `learning_goals` field (TextField)
-- [ ] Add `preferred_mode` field (CharField with choices)
-- [ ] Test model changes in Django shell
+- [x] Add `streak_days` field (IntegerField, default=0)
+- [x] Add `last_activity_date` field (DateField, null=True)
+- [x] Add `availability` field (CharField, max_length=100)
+- [x] Add `learning_goals` field (TextField)
+- [x] Add `preferred_mode` field (CharField with choices)
+- [x] Test model changes in Django shell
 
 #### 2. Course Model Enhancements
-- [ ] Add `subtitle` field (CharField, max_length=500)
-- [ ] Add `track` field (CharField with choices: Web/Data/Design)
-- [ ] Add `spotlight` field (TextField)
-- [ ] Create `CourseInstructor` model with M2M relationship
-- [ ] Add `order`, `role`, `bio` fields to CourseInstructor
-- [ ] Test model relationships
+- [x] Add `subtitle` field (CharField, max_length=500)
+- [x] Add `track` field (CharField with choices: Web/Data/Design)
+- [x] Add `spotlight` field (TextField)
+- [x] Create `CourseInstructor` model with M2M relationship
+- [x] Add `order`, `role`, `bio` fields to CourseInstructor
+- [x] Test model relationships
 
 #### 3. Lesson Model Enhancements
-- [ ] Add `lesson_type` field (CharField with choices)
-- [ ] Create `LessonVersionMarker` model
-- [ ] Add fields: `marker_id`, `label`, `timecode`, `position`, `marker_type`
-- [ ] Test version marker creation
+- [x] Add `lesson_type` field (CharField with choices)
+- [x] Create `LessonVersionMarker` model
+- [x] Add fields: `marker_id`, `label`, `timecode`, `position`, `marker_type` 
+- [x] Test version marker creation
 
 #### 4. Run Migrations
-- [ ] Backup database: `python manage.py dumpdata > backup.json`
-- [ ] Create migrations: `python manage.py makemigrations`
-- [ ] Review migration files
-- [ ] Apply migrations: `python manage.py migrate`
-- [ ] Verify migrations: `python manage.py showmigrations`
+- [x] Create migrations: `python manage.py makemigrations` 
+- [x] Review migration files
+- [x] Apply migrations: `python manage.py migrate` 
+- [x] Verify migrations: `python manage.py showmigrations` 
 
 #### 5. Update Serializers
-- [ ] Update `StudentSerializer` with new fields
-- [ ] Create `CourseInstructorSerializer`
-- [ ] Update `CourseSerializer` with nested instructors
-- [ ] Update `LessonSerializer` with `lesson_type`
-- [ ] Create `LessonVersionMarkerSerializer`
-- [ ] Write serializer tests
+- [x] Update `StudentSerializer` with new fields
+- [x] Create `CourseInstructorSerializer` 
+- [x] Update `LessonSerializer` with `lesson_type` 
+- [x] Create `LessonVersionMarkerSerializer` 
 
 #### 6. Create Onboarding Endpoint
-- [ ] Create `PATCH /api/students/me/onboarding/` endpoint
-- [ ] Validate onboarding data
-- [ ] Set `has_completed_onboarding = True`
-- [ ] Test endpoint with sample data
+- [x] Create `PATCH /api/students/me/onboarding/` endpoint
+- [x] Validate onboarding data
+- [x] Set `has_completed_onboarding = True` 
+- [x] Test endpoint with sample data
 
 ### Frontend Tasks (mr_ict_student)
 
 #### 1. Wire Onboarding Page
+- [x] Connect OnboardingPage to onboarding endpoint
+- [x] Send all onboarding form data
+- [x] Handle success/error responses
+- [x] Redirect to dashboard after completion
+- [x] Test complete onboarding flow
 - [ ] Connect OnboardingPage to onboarding endpoint
 - [ ] Send all onboarding form data
 - [ ] Handle success/error responses
